@@ -1,1 +1,6 @@
 build_engine/
+glfw3/
+stb-master/
+deps/
+tinyobjloader/
+vulkanSDK143090/
