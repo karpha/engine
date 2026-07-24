@@ -57,9 +57,19 @@ struct Vertex
 
 	static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions()
 	{
+        std::array<vk::VertexInputAttributeDescription, 2> attributeDescription;
+        attributeDescription[0].location = 0;
+        attributeDescription[0].binding = 0;
+        attributeDescription[0].format = vk::Format::eR32G32Sfloat;
+        attributeDescription[0].offset = offsetof(Vertex, pos);
         
-		return {{{.location = 0, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, pos)},
-		         {.location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color)}}};
+        attributeDescription[1].location = 1;
+        attributeDescription[1].binding = 0;
+        attributeDescription[1].format = vk::Format::eR32G32B32Sfloat;
+        attributeDescription[1].offset = offsetof(Vertex, color);
+        return attributeDescription;
+		// return {{{.location = 0, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, pos)},
+		//          {.location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color)}}};
 	}
 };
 
@@ -198,12 +208,17 @@ class HelloTriangleApplication
 
 	void createInstance()
 	{
-		constexpr vk::ApplicationInfo appInfo{.pApplicationName   = "Hello Triangle",
-		                                      .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-		                                      .pEngineName        = "No Engine",
-		                                      .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
-		                                      .apiVersion         = vk::ApiVersion14};
-
+		// constexpr vk::ApplicationInfo appInfo{.pApplicationName   = "Hello Triangle",
+		//                                       .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+		//                                       .pEngineName        = "No Engine",
+		//                                       .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
+		//                                       .apiVersion         = vk::ApiVersion14};
+        vk::ApplicationInfo appInfo{};  // 先声明再赋值时不能加constexpr
+        appInfo.pApplicationName = "Hello Triangle";
+        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.pEngineName = "No Engine";
+        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.apiVersion = vk::ApiVersion14;
 		// Get the required layers
 		std::vector<char const *> requiredLayers;
 		if (enableValidationLayers)
@@ -239,11 +254,17 @@ class HelloTriangleApplication
 			throw std::runtime_error("Required extension not supported: " + std::string(*unsupportedPropertyIt));
 		}
 
-		vk::InstanceCreateInfo createInfo{.pApplicationInfo        = &appInfo,
-		                                  .enabledLayerCount       = static_cast<uint32_t>(requiredLayers.size()),
-		                                  .ppEnabledLayerNames     = requiredLayers.data(),
-		                                  .enabledExtensionCount   = static_cast<uint32_t>(requiredExtensions.size()),
-		                                  .ppEnabledExtensionNames = requiredExtensions.data()};
+		// vk::InstanceCreateInfo createInfo{.pApplicationInfo        = &appInfo,
+		//                                   .enabledLayerCount       = static_cast<uint32_t>(requiredLayers.size()),
+		//                                   .ppEnabledLayerNames     = requiredLayers.data(),
+		//                                   .enabledExtensionCount   = static_cast<uint32_t>(requiredExtensions.size()),
+		//                                   .ppEnabledExtensionNames = requiredExtensions.data()};
+        vk::InstanceCreateInfo createInfo;
+        createInfo.pApplicationInfo = &appInfo;
+        createInfo.enabledLayerCount = static_cast<uint32_t>(requiredLayers.size());
+        createInfo.ppEnabledLayerNames = requiredLayers.data();
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 		instance = vk::raii::Instance(context, createInfo);
 	}
 
@@ -256,10 +277,15 @@ class HelloTriangleApplication
 		                                                    vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
 		vk::DebugUtilsMessageTypeFlagsEXT     messageTypeFlags(
 		    vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
-		vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfoEXT{.messageSeverity = severityFlags,
-		                                                                      .messageType     = messageTypeFlags,
-		                                                                      .pfnUserCallback = &debugCallback};
-		debugMessenger = instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
+		// vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfoEXT{.messageSeverity = severityFlags,
+		//                                                                       .messageType     = messageTypeFlags,
+		//                                                                       .pfnUserCallback = &debugCallback};
+		vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfoEXT;
+        debugUtilsMessengerCreateInfoEXT.messageSeverity = severityFlags;
+        debugUtilsMessengerCreateInfoEXT.messageType = messageTypeFlags;
+        debugUtilsMessengerCreateInfoEXT.pfnUserCallback = &debugCallback;
+
+        debugMessenger = instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
 	}
 
 	void createSurface()
@@ -340,21 +366,29 @@ class HelloTriangleApplication
 		                   vk::PhysicalDeviceVulkan11Features,
 		                   vk::PhysicalDeviceVulkan13Features,
 		                   vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
-		    featureChain = {
-		        {},                                                          // vk::PhysicalDeviceFeatures2
-		        {.shaderDrawParameters = true},                              // vk::PhysicalDeviceVulkan11Features
-		        {.synchronization2 = true, .dynamicRendering = true},        // vk::PhysicalDeviceVulkan13Features
-		        {.extendedDynamicState = true}                               // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
-		    };
-
+            featureChain;
+		    // featureChain = {
+		    //     {},                                                          // vk::PhysicalDeviceFeatures2
+		    //     {.shaderDrawParameters = true},                              // vk::PhysicalDeviceVulkan11Features
+		    //     {.synchronization2 = true, .dynamicRendering = true},        // vk::PhysicalDeviceVulkan13Features
+		    //     {.extendedDynamicState = true}                               // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+		    // };
+            featureChain.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters = true;
+            featureChain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2 = true;
+            featureChain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering = true;
 		// create a Device
 		float                     queuePriority = 0.5f;
-		vk::DeviceQueueCreateInfo deviceQueueCreateInfo{.queueFamilyIndex = queueIndex, .queueCount = 1, .pQueuePriorities = &queuePriority};
-		vk::DeviceCreateInfo      deviceCreateInfo{.pNext                   = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
-		                                           .queueCreateInfoCount    = 1,
-		                                           .pQueueCreateInfos       = &deviceQueueCreateInfo,
-		                                           .enabledExtensionCount   = static_cast<uint32_t>(requiredDeviceExtension.size()),
-		                                           .ppEnabledExtensionNames = requiredDeviceExtension.data()};
+		vk::DeviceQueueCreateInfo deviceQueueCreateInfo;
+        // {.queueFamilyIndex = queueIndex, .queueCount = 1, .pQueuePriorities = &queuePriority};
+        deviceQueueCreateInfo.queueFamilyIndex = queueIndex;
+        deviceQueueCreateInfo.queueCount = 1;
+        deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
+        // vk::DeviceCreateInfo      deviceCreateInfo{.pNext                   = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
+		//                                            .queueCreateInfoCount    = 1,
+		//                                            .pQueueCreateInfos       = &deviceQueueCreateInfo,
+		//                                            .enabledExtensionCount   = static_cast<uint32_t>(requiredDeviceExtension.size()),
+		//                                            .ppEnabledExtensionNames = requiredDeviceExtension.data()};
+        vk::DeviceCreateInfo deviceCreateInfo;
 
 		device = vk::raii::Device(physicalDevice, deviceCreateInfo);
 		queue  = vk::raii::Queue(device, queueIndex, 0);
@@ -372,19 +406,31 @@ class HelloTriangleApplication
 		std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(*surface);
 		vk::PresentModeKHR              presentMode           = chooseSwapPresentMode(availablePresentModes);
 
-		vk::SwapchainCreateInfoKHR swapChainCreateInfo{.surface          = *surface,
-		                                               .minImageCount    = minImageCount,
-		                                               .imageFormat      = swapChainSurfaceFormat.format,
-		                                               .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
-		                                               .imageExtent      = swapChainExtent,
-		                                               .imageArrayLayers = 1,
-		                                               .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment,
-		                                               .imageSharingMode = vk::SharingMode::eExclusive,
-		                                               .preTransform     = surfaceCapabilities.currentTransform,
-		                                               .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-		                                               .presentMode      = presentMode,
-		                                               .clipped          = true};
-
+		// vk::SwapchainCreateInfoKHR swapChainCreateInfo{.surface          = *surface,
+		//                                                .minImageCount    = minImageCount,
+		//                                                .imageFormat      = swapChainSurfaceFormat.format,
+		//                                                .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
+		//                                                .imageExtent      = swapChainExtent,
+		//                                                .imageArrayLayers = 1,
+		//                                                .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment,
+		//                                                .imageSharingMode = vk::SharingMode::eExclusive,
+		//                                                .preTransform     = surfaceCapabilities.currentTransform,
+		//                                                .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+		//                                                .presentMode      = presentMode,
+		//                                                .clipped          = true};
+        vk::SwapchainCreateInfoKHR swapChainCreateInfo;
+        swapChainCreateInfo.surface = *surface;
+        swapChainCreateInfo.minImageCount = minImageCount;
+        swapChainCreateInfo.imageFormat = swapChainSurfaceFormat.format;
+        swapChainCreateInfo.imageColorSpace = swapChainSurfaceFormat.colorSpace;
+        swapChainCreateInfo.imageExtent = swapChainExtent;
+        swapChainCreateInfo.imageArrayLayers = 1;
+        swapChainCreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+        swapChainCreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
+        swapChainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
+        swapChainCreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+        swapChainCreateInfo.presentMode = presentMode;
+        swapChainCreateInfo.clipped = true;
 		swapChain       = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
 		swapChainImages = swapChain.getImages();
 	}
@@ -393,9 +439,13 @@ class HelloTriangleApplication
 	{
 		assert(swapChainImageViews.empty());
 
-		vk::ImageViewCreateInfo imageViewCreateInfo{.viewType         = vk::ImageViewType::e2D,
-		                                            .format           = swapChainSurfaceFormat.format,
-		                                            .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+		// vk::ImageViewCreateInfo imageViewCreateInfo{.viewType         = vk::ImageViewType::e2D,
+		//                                             .format           = swapChainSurfaceFormat.format,
+		//                                             .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+        vk::ImageViewCreateInfo imageViewCreateInfo;
+        imageViewCreateInfo.viewType = vk::ImageViewType::e2D;
+        imageViewCreateInfo.format = swapChainSurfaceFormat.format;
+        imageViewCreateInfo.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0,1,0,1};
 		for (auto &image : swapChainImages)
 		{
 			imageViewCreateInfo.image = image;
@@ -407,72 +457,142 @@ class HelloTriangleApplication
 	{
 		vk::raii::ShaderModule shaderModule = createShaderModule(readFile("shaders/slang.spv"));
 
-		vk::PipelineShaderStageCreateInfo vertShaderStageInfo{.stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain"};
-		vk::PipelineShaderStageCreateInfo fragShaderStageInfo{.stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain"};
+		// vk::PipelineShaderStageCreateInfo vertShaderStageInfo{.stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain"};
+        vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
+        vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+        vertShaderStageInfo.module = shaderModule;
+        vertShaderStageInfo.pName = "vertMain";
+		// vk::PipelineShaderStageCreateInfo fragShaderStageInfo{.stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain"};
+        vk::PipelineShaderStageCreateInfo fragShaderStageInfo;
+        fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+        fragShaderStageInfo.module = shaderModule;
+        fragShaderStageInfo.pName = "fragMain";
 		vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
 		auto                                     bindingDescription    = Vertex::getBindingDescription();
 		auto                                     attributeDescriptions = Vertex::getAttributeDescriptions();
-		vk::PipelineVertexInputStateCreateInfo   vertexInputInfo{.vertexBindingDescriptionCount   = 1,
-		                                                         .pVertexBindingDescriptions      = &bindingDescription,
-		                                                         .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-		                                                         .pVertexAttributeDescriptions    = attributeDescriptions.data()};
-		vk::PipelineInputAssemblyStateCreateInfo inputAssembly{.topology = vk::PrimitiveTopology::eTriangleList};
-		vk::PipelineViewportStateCreateInfo      viewportState{.viewportCount = 1, .scissorCount = 1};
+		// vk::PipelineVertexInputStateCreateInfo   vertexInputInfo{.vertexBindingDescriptionCount   = 1,
+		//                                                          .pVertexBindingDescriptions      = &bindingDescription,
+		//                                                          .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+		//                                                          .pVertexAttributeDescriptions    = attributeDescriptions.data()};
+        vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+        vertexInputInfo.vertexBindingDescriptionCount = 1;
+        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		// vk::PipelineInputAssemblyStateCreateInfo inputAssembly{.topology = vk::PrimitiveTopology::eTriangleList};
+        vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
+        inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
+		// vk::PipelineViewportStateCreateInfo      viewportState{.viewportCount = 1, .scissorCount = 1};
+        vk::PipelineViewportStateCreateInfo viewportState;
+        viewportState.viewportCount = 1;
+        viewportState.scissorCount = 1;
 
-		vk::PipelineRasterizationStateCreateInfo rasterizer{.depthClampEnable        = vk::False,
-		                                                    .rasterizerDiscardEnable = vk::False,
-		                                                    .polygonMode             = vk::PolygonMode::eFill,
-		                                                    .cullMode                = vk::CullModeFlagBits::eBack,
-		                                                    .frontFace               = vk::FrontFace::eClockwise,
-		                                                    .depthBiasEnable         = vk::False,
-		                                                    .lineWidth               = 1.0f};
+		// vk::PipelineRasterizationStateCreateInfo rasterizer{.depthClampEnable        = vk::False,
+		//                                                     .rasterizerDiscardEnable = vk::False,
+		//                                                     .polygonMode             = vk::PolygonMode::eFill,
+		//                                                     .cullMode                = vk::CullModeFlagBits::eBack,
+		//                                                     .frontFace               = vk::FrontFace::eClockwise,
+		//                                                     .depthBiasEnable         = vk::False,
+		//                                                     .lineWidth               = 1.0f};
+        vk::PipelineRasterizationStateCreateInfo rasterizer;
+        rasterizer.depthClampEnable = vk::False;
+        rasterizer.rasterizerDiscardEnable = vk::False;
+        rasterizer.polygonMode = vk::PolygonMode::eFill;
+        rasterizer.cullMode = vk::CullModeFlagBits::eBack;
+        rasterizer.frontFace = vk::FrontFace::eClockwise;
+        rasterizer.depthBiasEnable = vk::False;
+        rasterizer.lineWidth = 1.0f;
 
-		vk::PipelineMultisampleStateCreateInfo multisampling{.rasterizationSamples = vk::SampleCountFlagBits::e1, .sampleShadingEnable = vk::False};
+		// vk::PipelineMultisampleStateCreateInfo multisampling{.rasterizationSamples = vk::SampleCountFlagBits::e1, .sampleShadingEnable = vk::False};
+        vk::PipelineMultisampleStateCreateInfo multisampling;
+        multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
+        multisampling.sampleShadingEnable = vk::False;
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{
-		    .blendEnable    = vk::False,
-		    .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+		// vk::PipelineColorBlendAttachmentState colorBlendAttachment{
+		//     .blendEnable    = vk::False,
+		//     .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+        vk::PipelineColorBlendAttachmentState colorBlendAttachment;
+        colorBlendAttachment.blendEnable = vk::False;
+        colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 
-		vk::PipelineColorBlendStateCreateInfo colorBlending{
-		    .logicOpEnable = vk::False, .logicOp = vk::LogicOp::eCopy, .attachmentCount = 1, .pAttachments = &colorBlendAttachment};
+		// vk::PipelineColorBlendStateCreateInfo colorBlending{
+		//     .logicOpEnable = vk::False, .logicOp = vk::LogicOp::eCopy, .attachmentCount = 1, .pAttachments = &colorBlendAttachment};
+        vk::PipelineColorBlendStateCreateInfo colorBlending;
+        colorBlending.logicOpEnable = vk::False;
+        colorBlending.logicOp = vk::LogicOp::eCopy;
+        colorBlending.attachmentCount = 1;
+        colorBlending.pAttachments = &colorBlendAttachment;
 
 		std::vector<vk::DynamicState>      dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-		vk::PipelineDynamicStateCreateInfo dynamicState{.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()), .pDynamicStates = dynamicStates.data()};
+		// vk::PipelineDynamicStateCreateInfo dynamicState{.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()), .pDynamicStates = dynamicStates.data()};
+        vk::PipelineDynamicStateCreateInfo dynamicState;
+        dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+        dynamicState.pDynamicStates = dynamicStates.data();
 
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{.setLayoutCount = 0, .pushConstantRangeCount = 0};
+		// vk::PipelineLayoutCreateInfo pipelineLayoutInfo{.setLayoutCount = 0, .pushConstantRangeCount = 0};
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+        pipelineLayoutInfo.setLayoutCount = 0;
+        pipelineLayoutInfo.pushConstantRangeCount = 0;
+
 		pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
-		vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain = {
-		    {.stageCount          = 2,
-		     .pStages             = shaderStages,
-		     .pVertexInputState   = &vertexInputInfo,
-		     .pInputAssemblyState = &inputAssembly,
-		     .pViewportState      = &viewportState,
-		     .pRasterizationState = &rasterizer,
-		     .pMultisampleState   = &multisampling,
-		     .pColorBlendState    = &colorBlending,
-		     .pDynamicState       = &dynamicState,
-		     .layout              = pipelineLayout,
-		     .renderPass          = nullptr},
-		    {.colorAttachmentCount = 1, .pColorAttachmentFormats = &swapChainSurfaceFormat.format}};
+		// vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain = {
+            //     {.stageCount          = 2,
+            //      .pStages             = shaderStages,
+            //      .pVertexInputState   = &vertexInputInfo,
+            //      .pInputAssemblyState = &inputAssembly,
+            //      .pViewportState      = &viewportState,
+            //      .pRasterizationState = &rasterizer,
+            //      .pMultisampleState   = &multisampling,
+            //      .pColorBlendState    = &colorBlending,
+            //      .pDynamicState       = &dynamicState,
+            //      .layout              = pipelineLayout,
+            //      .renderPass          = nullptr},
+            //     {.colorAttachmentCount = 1, .pColorAttachmentFormats = &swapChainSurfaceFormat.format}};
+        vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().stageCount = 2;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pStages = shaderStages;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pVertexInputState = &vertexInputInfo;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pInputAssemblyState = &inputAssembly;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pViewportState = &viewportState;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pMultisampleState = &multisampling;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pColorBlendState = &colorBlending;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pDynamicState = &dynamicState;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().layout = pipelineLayout;
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().renderPass = nullptr;
 
-		graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
+        pipelineCreateInfoChain.get<vk::PipelineRenderingCreateInfo>().colorAttachmentCount = 1;
+        pipelineCreateInfoChain.get<vk::PipelineRenderingCreateInfo>().pColorAttachmentFormats = &swapChainSurfaceFormat.format;
+
+        graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
 	}
 
 	void createCommandPool()
 	{
-		vk::CommandPoolCreateInfo poolInfo{.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-		                                   .queueFamilyIndex = queueIndex};
+		// vk::CommandPoolCreateInfo poolInfo{.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+		//                                    .queueFamilyIndex = queueIndex};
+        vk::CommandPoolCreateInfo poolInfo;
+        poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        poolInfo.queueFamilyIndex = queueIndex;
 		commandPool = vk::raii::CommandPool(device, poolInfo);
 	}
 
 	std::pair<vk::raii::Buffer, vk::raii::DeviceMemory> createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
 	{
-		vk::BufferCreateInfo   bufferInfo{.size = size, .usage = usage, .sharingMode = vk::SharingMode::eExclusive};
+		// vk::BufferCreateInfo   bufferInfo{.size = size, .usage = usage, .sharingMode = vk::SharingMode::eExclusive};
+        vk::BufferCreateInfo bufferInfo;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+        bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
 		vk::raii::Buffer       buffer          = vk::raii::Buffer(device, bufferInfo);
 		vk::MemoryRequirements memRequirements = buffer.getMemoryRequirements();
-		vk::MemoryAllocateInfo allocInfo{.allocationSize = memRequirements.size, .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties)};
+		// vk::MemoryAllocateInfo allocInfo{.allocationSize = memRequirements.size, .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties)};
+        vk::MemoryAllocateInfo allocInfo;
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits,properties);
+
 		vk::raii::DeviceMemory bufferMemory = vk::raii::DeviceMemory(device, allocInfo);
 		buffer.bindMemory(*bufferMemory, 0);
 		return {std::move(buffer), std::move(bufferMemory)};
@@ -514,13 +634,27 @@ class HelloTriangleApplication
 
 	void copyBuffer(vk::raii::Buffer &srcBuffer, vk::raii::Buffer &dstBuffer, vk::DeviceSize size)
 	{
-		vk::CommandBufferAllocateInfo allocInfo{.commandPool = commandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = 1};
+		// vk::CommandBufferAllocateInfo allocInfo{.commandPool = commandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = 1};
+        vk::CommandBufferAllocateInfo allocInfo;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = vk::CommandBufferLevel::ePrimary;
+        allocInfo.commandBufferCount = 1;
 		vk::raii::CommandBuffer       commandCopyBuffer = std::move(device.allocateCommandBuffers(allocInfo).front());
-		commandCopyBuffer.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+        // 
+        vk::CommandBufferBeginInfo beginInfo;
+        beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+        
+		// commandCopyBuffer.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+        commandCopyBuffer.begin(beginInfo);
 		commandCopyBuffer.copyBuffer(*srcBuffer, *dstBuffer, vk::BufferCopy(0, 0, size));
 		commandCopyBuffer.end();
-		queue.submit(vk::SubmitInfo{.commandBufferCount = 1, .pCommandBuffers = &*commandCopyBuffer}, nullptr);
-		queue.waitIdle();
+        vk::SubmitInfo submitInfoForQueue;
+        submitInfoForQueue.commandBufferCount = 1;
+        submitInfoForQueue.pCommandBuffers = &*commandCopyBuffer;
+        
+		// queue.submit(vk::SubmitInfo{.commandBufferCount = 1, .pCommandBuffers = &*commandCopyBuffer}, nullptr);
+		queue.submit(submitInfoForQueue, nullptr);
+        queue.waitIdle();
 	}
 
 	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
@@ -541,8 +675,12 @@ class HelloTriangleApplication
 	void createCommandBuffers()
 	{
 		commandBuffers.clear();
-		vk::CommandBufferAllocateInfo allocInfo{.commandPool = commandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = MAX_FRAMES_IN_FLIGHT};
-		commandBuffers = vk::raii::CommandBuffers(device, allocInfo);
+		// vk::CommandBufferAllocateInfo allocInfo{.commandPool = commandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = MAX_FRAMES_IN_FLIGHT};
+		vk::CommandBufferAllocateInfo allocInfo;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = vk::CommandBufferLevel::ePrimary;
+        allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+        commandBuffers = vk::raii::CommandBuffers(device, allocInfo);
 	}
 
 	void recordCommandBuffer(uint32_t imageIndex)
@@ -561,17 +699,31 @@ class HelloTriangleApplication
 		    vk::PipelineStageFlagBits2::eColorAttachmentOutput         // dstStage
 		);
 		vk::ClearValue              clearColor     = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
-		vk::RenderingAttachmentInfo attachmentInfo = {
-		    .imageView   = swapChainImageViews[imageIndex],
-		    .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-		    .loadOp      = vk::AttachmentLoadOp::eClear,
-		    .storeOp     = vk::AttachmentStoreOp::eStore,
-		    .clearValue  = clearColor};
-		vk::RenderingInfo renderingInfo = {
-		    .renderArea           = {.offset = {0, 0}, .extent = swapChainExtent},
-		    .layerCount           = 1,
-		    .colorAttachmentCount = 1,
-		    .pColorAttachments    = &attachmentInfo};
+		// vk::RenderingAttachmentInfo attachmentInfo = {
+		//     .imageView   = swapChainImageViews[imageIndex],
+		//     .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+		//     .loadOp      = vk::AttachmentLoadOp::eClear,
+		//     .storeOp     = vk::AttachmentStoreOp::eStore,
+		//     .clearValue  = clearColor};
+        vk::RenderingAttachmentInfo attachmentInfo;
+        attachmentInfo.imageView = swapChainImageViews[imageIndex];
+        attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+        attachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+        attachmentInfo.clearValue = clearColor;
+            // vk::RenderingInfo renderingInfo = {
+		//     .renderArea           = {.offset = {0, 0}, .extent = swapChainExtent},
+		//     .layerCount           = 1,
+		//     .colorAttachmentCount = 1,
+		//     .pColorAttachments    = &attachmentInfo};
+        vk::RenderingInfo renderingInfo;
+        renderingInfo.renderArea.offset.x = 0;
+        renderingInfo.renderArea.offset.y = 0;
+        renderingInfo.renderArea.extent = swapChainExtent;
+        renderingInfo.layerCount = 1;
+        renderingInfo.colorAttachmentCount = 1;
+        renderingInfo.pColorAttachments = &attachmentInfo;
+
 		commandBuffer.beginRendering(renderingInfo);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline);
 		commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
@@ -603,26 +755,47 @@ class HelloTriangleApplication
 	    vk::PipelineStageFlags2 src_stage_mask,
 	    vk::PipelineStageFlags2 dst_stage_mask)
 	{
-		vk::ImageMemoryBarrier2 barrier = {
-		    .srcStageMask        = src_stage_mask,
-		    .srcAccessMask       = src_access_mask,
-		    .dstStageMask        = dst_stage_mask,
-		    .dstAccessMask       = dst_access_mask,
-		    .oldLayout           = old_layout,
-		    .newLayout           = new_layout,
-		    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		    .image               = swapChainImages[imageIndex],
-		    .subresourceRange    = {
-		        .aspectMask     = vk::ImageAspectFlagBits::eColor,
-		        .baseMipLevel   = 0,
-		        .levelCount     = 1,
-		        .baseArrayLayer = 0,
-		        .layerCount     = 1}};
-		vk::DependencyInfo dependency_info = {
-		    .dependencyFlags         = {},
-		    .imageMemoryBarrierCount = 1,
-		    .pImageMemoryBarriers    = &barrier};
+		// vk::ImageMemoryBarrier2 barrier = {
+		//     .srcStageMask        = src_stage_mask,
+		//     .srcAccessMask       = src_access_mask,
+		//     .dstStageMask        = dst_stage_mask,
+		//     .dstAccessMask       = dst_access_mask,
+		//     .oldLayout           = old_layout,
+		//     .newLayout           = new_layout,
+		//     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		//     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		//     .image               = swapChainImages[imageIndex],
+		//     .subresourceRange    = {
+		//         .aspectMask     = vk::ImageAspectFlagBits::eColor,
+		//         .baseMipLevel   = 0,
+		//         .levelCount     = 1,
+		//         .baseArrayLayer = 0,
+		//         .layerCount     = 1}};
+        vk::ImageMemoryBarrier2 barrier;
+        barrier.srcStageMask = src_stage_mask;
+        barrier.srcAccessMask = src_access_mask;
+        barrier.dstStageMask = dst_stage_mask;
+        barrier.dstAccessMask = dst_access_mask;
+        barrier.oldLayout = old_layout;
+        barrier.newLayout = new_layout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = swapChainImages[imageIndex];
+        barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+
+
+		// vk::DependencyInfo dependency_info = {
+		//     .dependencyFlags         = {},
+		//     .imageMemoryBarrierCount = 1,
+		//     .pImageMemoryBarriers    = &barrier};
+        vk::DependencyInfo dependency_info;
+        dependency_info.dependencyFlags = {};
+        dependency_info.imageMemoryBarrierCount = 1;
+        dependency_info.pImageMemoryBarriers = &barrier;
 		commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
 	}
 
@@ -638,7 +811,10 @@ class HelloTriangleApplication
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			presentCompleteSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
-			inFlightFences.emplace_back(device, vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+            vk::FenceCreateInfo fenceInfo;
+            fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
+			// inFlightFences.emplace_back(device, vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+			inFlightFences.emplace_back(device, fenceInfo);
 		}
 	}
 
@@ -676,20 +852,34 @@ class HelloTriangleApplication
 		recordCommandBuffer(imageIndex);
 
 		vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-		const vk::SubmitInfo   submitInfo{.waitSemaphoreCount   = 1,
-		                                  .pWaitSemaphores      = &*presentCompleteSemaphores[frameIndex],
-		                                  .pWaitDstStageMask    = &waitDestinationStageMask,
-		                                  .commandBufferCount   = 1,
-		                                  .pCommandBuffers      = &*commandBuffers[frameIndex],
-		                                  .signalSemaphoreCount = 1,
-		                                  .pSignalSemaphores    = &*renderFinishedSemaphores[imageIndex]};
+		// const vk::SubmitInfo   submitInfo{.waitSemaphoreCount   = 1,
+		//                                   .pWaitSemaphores      = &*presentCompleteSemaphores[frameIndex],
+		//                                   .pWaitDstStageMask    = &waitDestinationStageMask,
+		//                                   .commandBufferCount   = 1,
+		//                                   .pCommandBuffers      = &*commandBuffers[frameIndex],
+		//                                   .signalSemaphoreCount = 1,
+		//                                   .pSignalSemaphores    = &*renderFinishedSemaphores[imageIndex]};
+        vk::SubmitInfo submitInfo;
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = &*presentCompleteSemaphores[frameIndex];
+        submitInfo.pWaitDstStageMask = &waitDestinationStageMask;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &*commandBuffers[frameIndex];
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &*renderFinishedSemaphores[imageIndex];
 		queue.submit(submitInfo, *inFlightFences[frameIndex]);
 
-		const vk::PresentInfoKHR presentInfoKHR{.waitSemaphoreCount = 1,
-		                                        .pWaitSemaphores    = &*renderFinishedSemaphores[imageIndex],
-		                                        .swapchainCount     = 1,
-		                                        .pSwapchains        = &*swapChain,
-		                                        .pImageIndices      = &imageIndex};
+		// const vk::PresentInfoKHR presentInfoKHR{.waitSemaphoreCount = 1,
+		//                                         .pWaitSemaphores    = &*renderFinishedSemaphores[imageIndex],
+		//                                         .swapchainCount     = 1,
+		//                                         .pSwapchains        = &*swapChain,
+		//                                         .pImageIndices      = &imageIndex};
+        vk::PresentInfoKHR presentInfoKHR;
+        presentInfoKHR.waitSemaphoreCount = 1;
+        presentInfoKHR.pWaitSemaphores = &*renderFinishedSemaphores[imageIndex];
+        presentInfoKHR.swapchainCount = 1;
+        presentInfoKHR.pSwapchains = &*swapChain;
+        presentInfoKHR.pImageIndices = &imageIndex;
 		result = queue.presentKHR(presentInfoKHR);
 		// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
 		// here and does not need to be caught by an exception.
@@ -708,7 +898,10 @@ class HelloTriangleApplication
 
 	[[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char> &code) const
 	{
-		vk::ShaderModuleCreateInfo createInfo{.codeSize = code.size(), .pCode = reinterpret_cast<const uint32_t *>(code.data())};
+		// vk::ShaderModuleCreateInfo createInfo{.codeSize = code.size(), .pCode = reinterpret_cast<const uint32_t *>(code.data())};
+        vk::ShaderModuleCreateInfo createInfo;
+        createInfo.codeSize = code.size();
+        createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 		vk::raii::ShaderModule     shaderModule{device, createInfo};
 
 		return shaderModule;
