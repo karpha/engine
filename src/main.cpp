@@ -389,6 +389,11 @@ class HelloTriangleApplication
 		//                                            .enabledExtensionCount   = static_cast<uint32_t>(requiredDeviceExtension.size()),
 		//                                            .ppEnabledExtensionNames = requiredDeviceExtension.data()};
         vk::DeviceCreateInfo deviceCreateInfo;
+        deviceCreateInfo.pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>();
+        deviceCreateInfo.queueCreateInfoCount = 1;
+        deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
+        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtension.size());
+        deviceCreateInfo.ppEnabledExtensionNames = requiredDeviceExtension.data();
 
 		device = vk::raii::Device(physicalDevice, deviceCreateInfo);
 		queue  = vk::raii::Queue(device, queueIndex, 0);
