@@ -170,6 +170,7 @@ class HelloTriangleApplication
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
+			if (glfwWindowShouldClose(window))	break;
 			drawFrame();
 		}
 
@@ -184,6 +185,8 @@ class HelloTriangleApplication
 
 	void cleanup()
 	{
+		device.waitIdle();
+
 		glfwDestroyWindow(window);
 
 		glfwTerminate();
@@ -191,6 +194,9 @@ class HelloTriangleApplication
 
 	void recreateSwapChain()
 	{
+		if (window == nullptr)
+			return;
+		
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window, &width, &height);
 		while (width == 0 || height == 0)
