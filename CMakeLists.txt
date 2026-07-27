@@ -19,5 +19,5 @@ target_link_libraries(Engine PRIVATE
     glfw
     glm::glm
     tinyobjloader::tinyobjloader
-    stb::stb
 )
+target_include_directories(Engine PRIVATE ${STB_INCLUDE_DIR})
