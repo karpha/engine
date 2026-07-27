@@ -5,6 +5,7 @@
     "vulkan",
     "glfw3",
     "glm",
-    "tinyobjloader"
+    "tinyobjloader",
+    "stb"
   ]
 }
