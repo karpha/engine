@@ -561,6 +561,9 @@ class HelloTriangleApplication
         pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pVertexInputState = &vertexInputInfo;
         pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pInputAssemblyState = &inputAssembly;
         pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pViewportState = &viewportState;
+
+		pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pRasterizationState = &rasterizer;
+
         pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pMultisampleState = &multisampling;
         pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pColorBlendState = &colorBlending;
         pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().pDynamicState = &dynamicState;
