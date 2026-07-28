@@ -28,9 +28,6 @@
 #include <optional>
 #include <set>
 #include <unordered_map>
-#include <memory>   // 使用instance的修改
-
-#include "instance.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -143,7 +140,6 @@ class HelloTriangleApplication {
 public:
     void run() {
         initWindow();
-        
         initVulkan();
         mainLoop();
         cleanup();
@@ -152,7 +148,6 @@ public:
 private:
     GLFWwindow* window;
 
-    std::unique_ptr<Instance> pInstance;        // instance  here
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
@@ -231,10 +226,7 @@ private:
     }
 
     void initVulkan() {
-        pInstance = std::make_unique<Instance>("Hello Triangle", "No Engine", true);
-        instance = pInstance->getInstance();        // here
-        std::cout << "Got instance from instance component\n";
-        
+        createInstance();
         setupDebugMessenger();
         createSurface();
         pickPhysicalDevice();
@@ -333,8 +325,7 @@ private:
         }
 
         vkDestroySurfaceKHR(instance, surface, nullptr);
-        // vkDestroyInstance(instance, nullptr);
-        // vkDestroyInstance 由 pInstance 析构函数处理  //here
+        vkDestroyInstance(instance, nullptr);
 
         glfwDestroyWindow(window);
 
@@ -1762,6 +1753,7 @@ private:
 
 int main() {
     HelloTriangleApplication app;
+
     try {
         app.run();
     } catch (const std::exception& e) {

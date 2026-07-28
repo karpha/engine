@@ -12,7 +12,10 @@ find_package(tinyobjloader CONFIG REQUIRED)
 find_package(stb REQUIRED)
 
 # ===== 可执行文件 =====
-add_executable(Engine src/main.cpp)
+add_executable(Engine 
+    src/main.cpp
+    src/instance.cpp
+)
 
 target_link_libraries(Engine PRIVATE
     Vulkan::Vulkan
