@@ -142,7 +142,7 @@ struct UniformBufferObject {
 
 class HelloTriangleApplication {
     public:
-    std::string windowName = "vulkan";
+    std::string windowName = "renderer";
     void run() {
         // initWindow();
         pWindow = std::make_unique<Window>(800, 600, windowName);
@@ -160,7 +160,7 @@ private:
     std::unique_ptr<Window> pWindow;
     // VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkSurfaceKHR surface;
+    // VkSurfaceKHR surface;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -220,28 +220,11 @@ private:
 
     bool framebufferResized = false;
 
-    // void initWindow() {
-    //     glfwInit();
-
-    //     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-    //     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-    //     glfwSetWindowUserPointer(window, this);
-    //     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    // }
-
-    // static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    //     auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-    //     app->framebufferResized = true;
-    // }
-
     void initVulkan() {
         pInstance = std::make_unique<Instance>("Hello Triangle", "No Engine", true);
-        // instance = pInstance->getInstance();        // here
         std::cout << "Got instance from instance component\n";
         setupDebugMessenger();
-        createSurface();
-
+        pInstance->createSurface(pWindow.get());  // 直接传入pWindow时相当于赋值指针，但是智能指针不可复制，因此需要修改函数的参数
         
         pickPhysicalDevice();
         createLogicalDevice();
@@ -338,7 +321,7 @@ private:
             DestroyDebugUtilsMessengerEXT(pInstance->getInstance(), debugMessenger, nullptr);
         }
 
-        vkDestroySurfaceKHR(pInstance->getInstance(), surface, nullptr);
+        vkDestroySurfaceKHR(pInstance->getInstance(), pInstance->getSurface(), nullptr);
         // vkDestroyInstance(instance, nullptr);
         // vkDestroyInstance 由 pInstance 析构函数处理  //here
 
@@ -382,12 +365,6 @@ private:
 
         if (CreateDebugUtilsMessengerEXT(pInstance->getInstance(), &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up debug messenger!");
-        }
-    }
-
-    void createSurface() {
-        if (glfwCreateWindowSurface(pInstance->getInstance(), pWindow->getWindow(), nullptr, &surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
         }
     }
 
@@ -474,7 +451,7 @@ private:
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface;
+        createInfo.surface = pInstance->getSurface();
 
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
@@ -1577,22 +1554,22 @@ private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
         SwapChainSupportDetails details;
 
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, pInstance->getSurface(), &details.capabilities);
 
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, pInstance->getSurface(), &formatCount, nullptr);
 
         if (formatCount != 0) {
             details.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, pInstance->getSurface(), &formatCount, details.formats.data());
         }
 
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, pInstance->getSurface(), &presentModeCount, nullptr);
 
         if (presentModeCount != 0) {
             details.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, pInstance->getSurface(), &presentModeCount, details.presentModes.data());
         }
 
         return details;
@@ -1647,7 +1624,7 @@ private:
             }
 
             VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, pInstance->getSurface(), &presentSupport);
 
             if (presentSupport) {
                 indices.presentFamily = i;

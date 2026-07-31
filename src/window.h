@@ -14,13 +14,13 @@ public:
     static void framebufferResizeCallback(GLFWwindow* window, int Width, int Height);
     
     
-    bool getFrameBufferResized(){
-        return frameBufferResized;
-    }
     GLFWwindow* getWindow();
     int getWindowWidth();   // 对于私有成员，有get()，同时也不要忘记set()
     int getWindowHeight();
-    std::string getWindowName(){
+    bool getFrameBufferResized(){
+        return frameBufferResized;
+    }
+    std::string &getWindowName(){
         return windowName;
     }
     void setWindowWidth(int width){

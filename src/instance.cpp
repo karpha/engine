@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <vector>
 #include <cstring>
+#include <memory>
 
 
 Instance::Instance( const std::string& appName , 
@@ -99,4 +100,11 @@ Instance::Instance( const std::string& appName ,
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;     // debugCallBack??
+    }
+
+    // void Instance::createSurface(std::unique_ptr<Window> window){   // 错误的参数类型
+    void Instance::createSurface(Window* window){   
+        if (glfwCreateWindowSurface(instance, window->getWindow(), nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
     }

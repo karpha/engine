@@ -3,6 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <string>
 #include <vector>
+#include <memory>
+
+#include "window.h"
 
 class Instance{
 public:
@@ -18,21 +21,25 @@ public:
     Instance(const Instance&) = delete;
     Instance& operator=(const Instance&) = delete;
 
-    VkInstance getInstance() const {
+    VkInstance &getInstance() {
         return instance;
     }
+    VkSurfaceKHR &getSurface(){
+        return surface;
+    }
+    VkDebugUtilsMessengerEXT &getDebugMessenger(){
+        return debugMessenger;
+    }
+    std::vector<const char*> getRequiredExtensions();
     bool isValidationLayerEnable(){
         return enableValidationLayers;
     }
 
     bool checkValidationLayerSupport();
-    std::vector<const char*> getRequiredExtensions();
     void populateDebugMessengerCreateInfo( VkDebugUtilsMessengerCreateInfoEXT& createInfo );
 
     void setupDebugMessenger();
-    void createSurface();
-    VkSurfaceKHR getSurface();
-    VkDebugUtilsMessengerEXT getDebugMessenger();
+    void createSurface(Window* window);
 private:
     VkInstance instance;  
     bool enableValidationLayers;
