@@ -16,3 +16,5 @@
 - 有window.cpp， 负责创建窗口，处理窗口大小变化，键盘输入
 - 有utils.cpp， 主要是辅助函数
 - 有vulkan instance.cpp， 用于创建vulkan 实例，
+
+> 像这样程序中有上述完整的绘制图像的过程的（包括加载texture和model），这样的一个main文件可以认为是一个渲染器（renderer），但是不足以被认为是一个完整的引擎（engine）

@@ -15,6 +15,7 @@ find_package(stb REQUIRED)
 add_executable(Engine 
     src/main.cpp
     src/instance.cpp
+    src/window.cpp
 )
 
 target_link_libraries(Engine PRIVATE

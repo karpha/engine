@@ -31,6 +31,7 @@
 #include <memory>   // 使用instance的修改
 
 #include "instance.h"
+#include "window.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -140,20 +141,24 @@ struct UniformBufferObject {
 };
 
 class HelloTriangleApplication {
-public:
+    public:
+    std::string windowName = "vulkan";
     void run() {
-        initWindow();
-        
+        // initWindow();
+        pWindow = std::make_unique<Window>(800, 600, windowName);
+        pWindow->initWindow();
+
         initVulkan();
         mainLoop();
         cleanup();
     }
 
 private:
-    GLFWwindow* window;
+    // GLFWwindow* window;
 
     std::unique_ptr<Instance> pInstance;        // instance  here
-    VkInstance instance;
+    std::unique_ptr<Window> pWindow;
+    // VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
 
@@ -215,28 +220,29 @@ private:
 
     bool framebufferResized = false;
 
-    void initWindow() {
-        glfwInit();
+    // void initWindow() {
+    //     glfwInit();
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    //     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(window, this);
-        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    }
+    //     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    //     glfwSetWindowUserPointer(window, this);
+    //     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+    // }
 
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-        app->framebufferResized = true;
-    }
+    // static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    //     auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+    //     app->framebufferResized = true;
+    // }
 
     void initVulkan() {
         pInstance = std::make_unique<Instance>("Hello Triangle", "No Engine", true);
-        instance = pInstance->getInstance();        // here
+        // instance = pInstance->getInstance();        // here
         std::cout << "Got instance from instance component\n";
-        
         setupDebugMessenger();
         createSurface();
+
+        
         pickPhysicalDevice();
         createLogicalDevice();
         createSwapChain();
@@ -262,7 +268,7 @@ private:
     }
 
     void mainLoop() {
-        while (!glfwWindowShouldClose(window)) {
+        while (!glfwWindowShouldClose(pWindow->getWindow())) {
             glfwPollEvents();
             drawFrame();
         }
@@ -329,23 +335,23 @@ private:
         vkDestroyDevice(device, nullptr);
 
         if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+            DestroyDebugUtilsMessengerEXT(pInstance->getInstance(), debugMessenger, nullptr);
         }
 
-        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroySurfaceKHR(pInstance->getInstance(), surface, nullptr);
         // vkDestroyInstance(instance, nullptr);
         // vkDestroyInstance 由 pInstance 析构函数处理  //here
 
-        glfwDestroyWindow(window);
+        glfwDestroyWindow(pWindow->getWindow());
 
         glfwTerminate();
     }
 
     void recreateSwapChain() {
         int width = 0, height = 0;
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(pWindow->getWindow(), &width, &height);
         while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(window, &width, &height);
+            glfwGetFramebufferSize(pWindow->getWindow(), &width, &height);
             glfwWaitEvents();
         }
 
@@ -374,27 +380,27 @@ private:
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
 
-        if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+        if (CreateDebugUtilsMessengerEXT(pInstance->getInstance(), &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up debug messenger!");
         }
     }
 
     void createSurface() {
-        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(pInstance->getInstance(), pWindow->getWindow(), nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create window surface!");
         }
     }
 
     void pickPhysicalDevice() {
         uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(pInstance->getInstance(), &deviceCount, nullptr);
 
         if (deviceCount == 0) {
             throw std::runtime_error("failed to find GPUs with Vulkan support!");
         }
 
         std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+        vkEnumeratePhysicalDevices(pInstance->getInstance(), &deviceCount, devices.data());
 
         for (const auto& device : devices) {
             if (isDeviceSuitable(device)) {
@@ -1554,7 +1560,7 @@ private:
             return capabilities.currentExtent;
         } else {
             int width, height;
-            glfwGetFramebufferSize(window, &width, &height);
+            glfwGetFramebufferSize(pWindow->getWindow(), &width, &height);
 
             VkExtent2D actualExtent = {
                 static_cast<uint32_t>(width),

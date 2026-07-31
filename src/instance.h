@@ -29,10 +29,17 @@ public:
     std::vector<const char*> getRequiredExtensions();
     void populateDebugMessengerCreateInfo( VkDebugUtilsMessengerCreateInfoEXT& createInfo );
 
+    void setupDebugMessenger();
+    void createSurface();
+    VkSurfaceKHR getSurface();
+    VkDebugUtilsMessengerEXT getDebugMessenger();
 private:
     VkInstance instance;  
     bool enableValidationLayers;
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
+
+    VkSurfaceKHR surface;
+    VkDebugUtilsMessengerEXT debugMessenger;
 };
