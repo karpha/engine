@@ -18,6 +18,7 @@ public:
     }
     void pickPhysicalDevice();
     void createLogicalDevice();
+    bool isDeviceSuitable(VkPhysicalDevice device);
     
 private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
