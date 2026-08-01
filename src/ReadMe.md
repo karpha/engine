@@ -19,3 +19,7 @@
 
 > 像这样程序中有上述完整的绘制图像的过程的（包括加载texture和model），这样的一个main文件可以认为是一个渲染器（renderer），但是不足以被认为是一个完整的引擎（engine）
 -   在使用get()函数获取类的私有成员时，如果成员是一个结构体类型，包含数据过多时，可以在get()函数前添加 "&"，返回成员的引用。
+- 使用vcpkg安装所需依赖之后，使用cmake -S . -B sdfsd 命令时为：
+> cmake -S . -B build  -G "Visual Studio 17 2022" -A X64 -DCMAKE_TOOLCHAIN_FILE="D:\vcpkg\vcpkg\scripts\buildsystems\vcpkg.cmake" 
+> cmake --build build --config Debug
+- 需要添加vcpkg路径方能有效识别【出错时将已有build目录删除重新执行】,

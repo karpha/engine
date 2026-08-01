@@ -16,6 +16,7 @@ add_executable(Engine
     src/main.cpp
     src/instance.cpp
     src/window.cpp
+    src/device.cpp
 )
 
 target_link_libraries(Engine PRIVATE

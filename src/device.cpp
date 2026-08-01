@@ -1,21 +1,15 @@
 #include "device.h"
 #include <stdexcept>
 #include <vector>
-#include <optional>
+#include <set>
+#include <string>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include "instance.h"
+
 // 有device.cpp 选择物理设备，创建逻辑设备，队列，检查vulkan扩展、设备功能、交换链是否支持等
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
@@ -31,7 +25,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
             }
 
             VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, pInstance->getSurface(), &presentSupport);
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, instance->getSurface(), &presentSupport);
 
             if (presentSupport) {
                 indices.presentFamily = i;
@@ -47,9 +41,9 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
         return indices;
     }
 
-    VkSampleCountFlagBits getMaxUsableSampleCount() {
+    VkSampleCountFlagBits Device::getMaxUsableSampleCount() {
         VkPhysicalDeviceProperties physicalDeviceProperties;
-        vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+        vkGetPhysicalDeviceProperties(getPhysicalDevice(), &physicalDeviceProperties);
 
         VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
         if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
@@ -62,26 +56,28 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
         return VK_SAMPLE_COUNT_1_BIT;
     } 
 
-void Device::pickPhysicalDevice(){
+void Device::pickPhysicalDevice(Instance* instance) {
+    this->instance = instance;
     uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(pInstance->getInstance(), &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(instance->getInstance(), &deviceCount, nullptr);
 
         if (deviceCount == 0) {
             throw std::runtime_error("failed to find GPUs with Vulkan support!");
         }
 
         std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(pInstance->getInstance(), &deviceCount, devices.data());
+        vkEnumeratePhysicalDevices(instance->getInstance(), &deviceCount, devices.data());
 
         for (const auto& device : devices) {
             if (isDeviceSuitable(device)) {
-                physicalDevice = device;
-                msaaSamples = getMaxUsableSampleCount();
+                setPhysicalDevice(device);
+                // msaaSamples = getMaxUsableSampleCount();
+                setMsaaSamples(getMaxUsableSampleCount());
                 break;
             }
         }
 
-        if (physicalDevice == VK_NULL_HANDLE) {
+        if (getPhysicalDevice() == VK_NULL_HANDLE) {
             throw std::runtime_error("failed to find a suitable GPU!");
         }
 }
@@ -101,4 +97,88 @@ bool Device::isDeviceSuitable(VkPhysicalDevice device) {
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
         return indices.isComplete() && extensionsSupported && swapChainAdequate  && supportedFeatures.samplerAnisotropy;
+    }
+
+bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    uint32_t extensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(
+        device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(
+        deviceExtensions.begin(), deviceExtensions.end());
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+}
+
+SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device) {
+    SwapChainSupportDetails details{};
+    const VkSurfaceKHR surface = instance->getSurface();
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+    uint32_t formatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(
+            device, surface, &formatCount, details.formats.data());
+    }
+
+    uint32_t presentModeCount = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(
+        device, surface, &presentModeCount, nullptr);
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            device, surface, &presentModeCount, details.presentModes.data());
+    }
+
+    return details;
+}
+
+    void Device::createLogicalDevice(){
+        QueueFamilyIndices indices = findQueueFamilies(getPhysicalDevice());
+
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+
+        float queuePriority = 1.0f;
+        for (uint32_t queueFamily : uniqueQueueFamilies) {
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+        deviceFeatures.samplerAnisotropy = VK_TRUE;
+                
+
+        VkDeviceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+        createInfo.pQueueCreateInfos = queueCreateInfos.data();
+
+        createInfo.pEnabledFeatures = &deviceFeatures;
+
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+        createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+        createInfo.enabledLayerCount = 0;
+
+        if (vkCreateDevice(getPhysicalDevice(), &createInfo, nullptr, &device) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create logical device!");
+        }
+
+        vkGetDeviceQueue(getDevice(), indices.graphicsFamily.value(), 0, &graphicsQueue);
+        vkGetDeviceQueue(getDevice(), indices.presentFamily.value(), 0, &presentQueue);
     }
