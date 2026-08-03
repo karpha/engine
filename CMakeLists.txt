@@ -17,6 +17,7 @@ add_executable(Engine
     src/instance.cpp
     src/window.cpp
     src/device.cpp
+    src/swapchain.cpp
 )
 
 target_link_libraries(Engine PRIVATE

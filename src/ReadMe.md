@@ -29,4 +29,4 @@ cmake --build build --config Debug
 cmake -S . -B build_engine -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=F:\vcpkgRebuild\vcpkg\scripts\buildsystems\vcpkg.cmake
 cmake --build build_engine --config Debug
 ```
-sdf
+- 传参数时，是用变量（复制一份）传入还是引用（&）传入，还是传变量的指针。
