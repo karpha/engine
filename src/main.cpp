@@ -35,6 +35,10 @@
 #include "device.h"
 #include "swapchain.h"
 #include "renderpass.h"
+#include "buffer.h"
+#include "command.h"
+#include "descriptor.h"
+#include "texture.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -149,6 +153,12 @@ private:
     std::unique_ptr<SwapChain> pSwapchain;
     std::unique_ptr<RenderPass> pRenderPass;
 
+    std::unique_ptr<Buffer> pBuffer;
+    std::unique_ptr<Command> pCommand;
+    std::unique_ptr<Descriptor> pDescriptor;
+    std::unique_ptr<Texture> pTexture;
+
+
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     // VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkSampleCountFlagBits msaaSamples;
@@ -197,7 +207,7 @@ private:
     std::vector<void*> uniformBuffersMapped;
 
     VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<VkDescriptorSet> descriptorSets;        // 
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -239,28 +249,41 @@ private:
         pRenderPass->createRenderPass();
         renderPass = pRenderPass->getRenderpass();
 
-        createDescriptorSetLayout();    // descriptor
+        pBuffer = std::make_unique<Buffer>(pDevice.get(), pTexture.get(), pSwapchain.get());      //?
+        pCommand = std::make_unique<Command>(pDevice.get());
+        pTexture = std::make_unique<Texture>(pDevice.get(), pBuffer.get(), pCommand.get());     // ? 先后顺序是否会有影响？
+        pDescriptor = std::make_unique<Descriptor>(pDevice.get(), pTexture.get());
+
+        // createDescriptorSetLayout();    // descriptor
+        pDescriptor->createDescriptorSetLayout();
 
         createGraphicsPipeline();       // pipeline
         
-        createCommandPool();        // command
+        // createCommandPool();        // command
+        pCommand->createCommandPool();
 
         createColorResources();     // model , scene loader
         createDepthResources();
         
         createFramebuffers();       // buffer
 
-        createTextureImage();       // texture
-        createTextureImageView();
-        createTextureSampler();
+        // createTextureImage();       // texture
+        pTexture->createTextureImage();
+        // createTextureImageView();
+        pTexture->createTextureImageView();
+        // createTextureSampler();
+        pTexture->createTextureSampler();
         loadModel();
 
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffers();     // buffer
+        pBuffer->createUniformBuffers();
 
-        createDescriptorPool();     // descriptor
-        createDescriptorSets();
+        // createDescriptorPool();     // descriptor
+        pDescriptor->createDescriptorPool();
+        // createDescriptorSets();
+        pDescriptor->createDescriptorSets();
 
         createCommandBuffers();     // command
         createSyncObjects();
@@ -1100,18 +1123,18 @@ private:
         endSingleTimeCommands(commandBuffer);
     }
 
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-        VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-                return i;
-            }
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
         }
-
-        throw std::runtime_error("failed to find suitable memory type!");
     }
+
+    throw std::runtime_error("failed to find suitable memory type!");
+}
 
     void createCommandBuffers() {
         commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);

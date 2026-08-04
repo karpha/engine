@@ -1,0 +1,101 @@
+#pragma once
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include "device.h"
+#include "buffer.h"
+#include "command.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+class Texture{
+public:
+    Texture(Device* dev, Buffer* buff, Command* cmd){
+        device = dev;
+        buffer = buff;
+        command = cmd;
+    }
+    ~Texture(){
+        vkDestroyImageView(device->getDevice(), textureImageView, nullptr);
+        vkDestroySampler(device->getDevice(), textureSampler,nullptr); 
+        vkDestroyImage(device->getDevice(), textureImage, nullptr);
+        vkFreeMemory(device->getDevice(), textureImageMemory, nullptr);
+    }
+
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
+
+    VkImage getTextureImage(){
+        return textureImage;
+    }
+    VkDeviceMemory getTextureImageMemory(){
+        return textureImageMemory;
+    }
+    VkImageView getTextureImageView(){
+        return textureImageView;
+    }
+    VkSampler getTextureSampler(){
+        return textureSampler;
+    }
+    uint32_t getMipLevels(){
+        return mipLevels;
+    }
+    VkImage getColorImage(){
+        return colorImage;
+    }
+    VkDeviceMemory getColorImageMemory(){
+        return colorImageMemory;
+    }
+    VkImageView getColorImageView(){
+        return colorImageView;
+    }
+
+    VkImage getDepthImage(){
+        return depthImage;
+    }
+    VkDeviceMemory getDepthImageMemory(){
+        return depthImageMemory;
+    }
+    VkImageView getDepthImageView(){
+        return depthImageView;
+    }
+    
+    void createTextureImage();
+    void createTextureImageView();
+    void createTextureSampler();
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+    void createImage(
+        uint32_t width, 
+        uint32_t height, 
+        uint32_t mipLevels, 
+        VkSampleCountFlagBits numSamples, 
+        VkFormat format, 
+        VkImageTiling tiling, 
+        VkImageUsageFlags usage, 
+        VkMemoryPropertyFlags properties, 
+        VkImage& image, 
+        VkDeviceMemory& imageMemory);
+    void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+
+private:
+    VkImage textureImage;
+    VkDeviceMemory textureImageMemory;
+    VkImageView textureImageView;
+    VkSampler textureSampler;
+    const std::string TEXTURE_PATH = "textures/viking_room.png";
+    uint32_t mipLevels;
+
+    VkImage colorImage;
+    VkDeviceMemory colorImageMemory;
+    VkImageView colorImageView;
+
+    VkImage depthImage;
+    VkDeviceMemory depthImageMemory;
+    VkImageView depthImageView;
+
+    Device* device;
+    Buffer* buffer;
+    Command* command;
+};
