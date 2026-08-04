@@ -18,6 +18,7 @@ add_executable(Engine
     src/window.cpp
     src/device.cpp
     src/swapchain.cpp
+    src/renderpass.cpp
 )
 
 target_link_libraries(Engine PRIVATE

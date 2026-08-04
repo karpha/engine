@@ -12,10 +12,11 @@
 - 有swapchain.cpp， 创建 和 管理交换链
 - 有command.cpp， 负责command pool与command buffer
 - 有renderer
-- 有camera.cpp， 负责相机
 - 有window.cpp， 负责创建窗口，处理窗口大小变化，键盘输入
-- 有utils.cpp， 主要是辅助函数
 - 有vulkan instance.cpp， 用于创建vulkan 实例，
+
+- 有camera.cpp， 负责相机
+- 有utils.cpp， 主要是辅助函数
 
 > 像这样程序中有上述完整的绘制图像的过程的（包括加载texture和model），这样的一个main文件可以认为是一个渲染器（renderer），但是不足以被认为是一个完整的引擎（engine）
 -   在使用get()函数获取类的私有成员时，如果成员是一个结构体类型，包含数据过多时，可以在get()函数前添加 "&"，返回成员的引用。
