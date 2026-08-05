@@ -1,5 +1,6 @@
 #include "command.h"
 #include <stdexcept>
+#include "descriptor.h"
 
 VkCommandBuffer Command::beginSingleTimeCommands() {
     VkCommandBufferAllocateInfo allocInfo{};
@@ -44,5 +45,19 @@ void Command::createCommandPool() {
 
     if (vkCreateCommandPool(device->getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics command pool!");
+    }
+}
+
+void Command::createCommandBuffers() {
+    commandBuffers.resize(descriptor->getMAX_FRAMES_IN_FLIGHT());
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+
+    if (vkAllocateCommandBuffers(device->getDevice(), &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
     }
 }

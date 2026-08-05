@@ -4,6 +4,8 @@
 #include <vector>
 #include "device.h"
 
+class Descriptor;
+
 class Command{
 public:
     Command(Device* dev){
@@ -12,10 +14,14 @@ public:
     ~Command(){
         vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);
     }
+    void setDescriptor(Descriptor* des){
+        descriptor = des;
+    }
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
     void createCommandPool();
+    void createCommandBuffers();
 
 private:
     VkCommandPool commandPool;
@@ -23,4 +29,5 @@ private:
     VkQueue graphicsQueue;
 
     Device* device;
+    Descriptor* descriptor;
 };

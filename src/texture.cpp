@@ -1,6 +1,8 @@
 #include "texture.h"
 #include <stdexcept>
 
+#include "buffer.h"
+
 void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
     // Check if image format supports linear blitting
     VkFormatProperties formatProperties;

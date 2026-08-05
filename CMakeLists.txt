@@ -19,6 +19,11 @@ add_executable(Engine
     src/device.cpp
     src/swapchain.cpp
     src/renderpass.cpp
+    src/buffer.cpp
+    src/command.cpp
+    src/descriptor.cpp
+    src/texture.cpp
+    src/thirdParty.cpp
 )
 
 target_link_libraries(Engine PRIVATE

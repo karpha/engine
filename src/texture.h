@@ -2,11 +2,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include "device.h"
-#include "buffer.h"
+// #include "buffer.h"
 #include "command.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+// #define STB_IMAGE_IMPLEMENTATION
+// #include <stb_image.h>
+#include "thirdParty.h"
+
+class Buffer;
 
 class Texture{
 public:

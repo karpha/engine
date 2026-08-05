@@ -4,9 +4,15 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <glm/glm.hpp>
+
 #include "device.h"
-#include "texture.h"
+// #include "texture.h"
 #include "swapchain.h"
+#include "renderpass.h"
+#include "command.h"
+#include <array>
+
+class Texture;
 
 class Descriptor;   // 在头文件中只 前向声明， 在cpp中才真正包含
 
@@ -59,10 +65,14 @@ struct Vertex {
 
 class Buffer{
 public:
-    Buffer(Device* dev,Texture* txture, SwapChain* sw){
+    Buffer(Device* dev){
         device = dev;
+    }
+    void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd){
         texture = txture;
         swapchain = sw;
+        renderpass = renderp;
+        command = cmd;
     }
 
     std::vector<VkBuffer> getUniformBuffers(){
@@ -74,6 +84,19 @@ public:
     std::vector<void*> getUniformBuffersMapped(){
         return uniformBuffersMapped;
     }
+    VkBuffer getVertexBuffer(){
+        return vertexBuffer;
+    }
+    VkDeviceMemory getVertexBufferMemory(){
+        return vertexBufferMemory;
+    }
+    VkBuffer getIndexBuffer(){
+        return indexBuffer;
+    }
+    VkDeviceMemory getIndexBufferMemory(){
+        return indexBufferMemory;
+    }
+    
 
     void createVertexBuffer();
     void createIndexBuffer();
@@ -87,6 +110,8 @@ public:
     VkBuffer& buffer, 
     VkDeviceMemory& bufferMemory);
 
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
 private:
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -95,8 +120,15 @@ private:
     std::vector<uint32_t> indices;
     std::vector<Vertex> vertices;
 
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+
     Descriptor* descrpt;
     Device* device;
     Texture* texture;
     SwapChain* swapchain;
+    RenderPass* renderpass;
+    Command* command;
 };

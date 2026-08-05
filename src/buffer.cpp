@@ -4,6 +4,10 @@
 #include "swapchain.h"
 #include "renderpass.h"
 
+#include "texture.h"
+
+#include <array>
+
 uint32_t Buffer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(device->getPhysicalDevice(), &memProperties);
@@ -62,28 +66,44 @@ void Buffer::createUniformBuffers() {
 }
 
 void Buffer::createFramebuffers() {
-    swapchain-> swapChainFramebuffers.resize(swapChainImageViews.size());
+    swapchain->getSwapchainFrameBuffers().resize(swapchain->getSwapchainImageViews().size());
+    //  swapChainFramebuffers.resize(swapChainImageViews.size());
 
-    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+    for (size_t i = 0; i < swapchain->getSwapchainImageViews().size(); i++) {
         std::array<VkImageView, 3> attachments = {
-            colorImageView,
-            depthImageView,
-            swapChainImageViews[i]
+            texture->getColorImageView(),
+            texture->getDepthImageView(),
+            swapchain->getSwapchainImageViews()[i]
         };
+        // std::array<VkImageView, 3> attachments = {
+        //     colorImageView,
+        //     depthImageView,
+        //     swapChainImageViews[i]
+        // };
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.renderPass = renderpass->getRenderpass();
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
+        framebufferInfo.width = swapchain->getSwapchainExtent().width;
+        framebufferInfo.height = swapchain->getSwapchainExtent().height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(device->getDevice(), &framebufferInfo, nullptr, &swapchain->getSwapchainFrameBuffers()[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
+}
+
+void Buffer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+        VkCommandBuffer commandBuffer = command->beginSingleTimeCommands();
+
+        VkBufferCopy copyRegion{};
+        copyRegion.size = size;
+        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+        command->endSingleTimeCommands(commandBuffer);
 }
 
 void Buffer::createVertexBuffer() {
