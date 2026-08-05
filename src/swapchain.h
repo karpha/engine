@@ -46,10 +46,10 @@ public:
     VkExtent2D getSwapchainExtent(){
         return swapChainExtent;
     }
-    std::vector<VkImageView> getSwapchainImageViews(){
+    std::vector<VkImageView>& getSwapchainImageViews(){
         return swapChainImageViews;
     }
-    std::vector<VkFramebuffer> getSwapchainFrameBuffers(){
+    std::vector<VkFramebuffer>& getSwapchainFrameBuffers(){
         return swapChainFramebuffers;
     }
 

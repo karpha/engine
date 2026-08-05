@@ -23,6 +23,16 @@ public:
     void createCommandPool();
     void createCommandBuffers();
 
+    VkCommandPool getCommandPool(){
+        return commandPool;
+    }
+    std::vector<VkCommandBuffer>& getCommandBuffers(){
+        return commandBuffers;
+    }
+    void setGraphicsQueue(VkQueue queue){
+        graphicsQueue = queue;
+    }
+
 private:
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;

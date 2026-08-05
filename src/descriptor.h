@@ -14,6 +14,9 @@ public:
         device = dev;
         texture = txture;
     }
+    void setBuffer(Buffer* buf){
+        buffer = buf;
+    }
     ~Descriptor(){
         if (descriptorSetLayout != VK_NULL_HANDLE)
             vkDestroyDescriptorSetLayout(device->getDevice(), descriptorSetLayout, nullptr);
@@ -30,7 +33,7 @@ public:
     VkDescriptorPool getDescriptorPool(){
         return descriptorPool;
     }
-    std::vector<VkDescriptorSet> getDescriptorSets(){
+    std::vector<VkDescriptorSet>& getDescriptorSets(){
         return descriptorSets;
     }
     const int getMAX_FRAMES_IN_FLIGHT() const{

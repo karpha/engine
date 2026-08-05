@@ -68,20 +68,21 @@ public:
     Buffer(Device* dev){
         device = dev;
     }
-    void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd){
+    void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd, Descriptor* desc){
         texture = txture;
         swapchain = sw;
         renderpass = renderp;
         command = cmd;
+        descrpt = desc;
     }
 
-    std::vector<VkBuffer> getUniformBuffers(){
+    std::vector<VkBuffer>& getUniformBuffers(){
         return uniformBuffers;
     }
-    std::vector<VkDeviceMemory> getUniformBuffersMemory(){
+    std::vector<VkDeviceMemory>& getUniformBuffersMemory(){
         return uniformBuffersMemory;
     }
-    std::vector<void*> getUniformBuffersMapped(){
+    std::vector<void*>& getUniformBuffersMapped(){
         return uniformBuffersMapped;
     }
     VkBuffer getVertexBuffer(){
@@ -111,6 +112,13 @@ public:
     VkDeviceMemory& bufferMemory);
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    std::vector<Vertex>& getVertices(){
+        return vertices;
+    }
+    std::vector<uint32_t>& getIndices(){
+        return indices;
+    }
 
 private:
     std::vector<VkBuffer> uniformBuffers;

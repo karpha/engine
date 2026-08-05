@@ -62,6 +62,13 @@ public:
     VkImageView getDepthImageView(){
         return depthImageView;
     }
+
+    void setColorImage(VkImage img) { colorImage = img; }
+    void setColorImageMemory(VkDeviceMemory mem) { colorImageMemory = mem; }
+    void setColorImageView(VkImageView view) { colorImageView = view; }
+    void setDepthImage(VkImage img) { depthImage = img; }
+    void setDepthImageMemory(VkDeviceMemory mem) { depthImageMemory = mem; }
+    void setDepthImageView(VkImageView view) { depthImageView = view; }
     
     void createTextureImage();
     void createTextureImageView();
