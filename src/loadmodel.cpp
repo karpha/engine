@@ -1,4 +1,5 @@
-#define TINYOBJLOADER_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION    // 与头文件对应的 #define 只能放在头文件对应的cpp文件中，
+// 如果在头文件中使用引用头文件相关的#define， 会导致头文件对应的cpp与main.cpp文件在编译时都有引用头文件的实现，之后在链接阶段导致重定义
 #include "loadModel.h" 
 #include "buffer.h"
 
