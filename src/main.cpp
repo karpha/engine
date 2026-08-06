@@ -3,16 +3,16 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
 
+// #define GLM_ENABLE_EXPERIMENTAL
+// #include <glm/gtx/hash.hpp>
 // #define STB_IMAGE_IMPLEMENTATION
 // #include <stb_image.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
+// #define TINYOBJLOADER_IMPLEMENTATION
+// #include <tiny_obj_loader.h>
 
 #include <iostream>
 #include <fstream>
@@ -39,6 +39,7 @@
 #include "command.h"
 #include "descriptor.h"
 #include "texture.h"
+#include "loadModel.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -75,13 +76,13 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 }
 
 
-namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-        }
-    };
-}
+// namespace std {
+//     template<> struct hash<Vertex> {
+//         size_t operator()(Vertex const& vertex) const {
+//             return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+//         }
+//     };
+// }
 
 class HelloTriangleApplication {
     public:
@@ -107,6 +108,8 @@ private:
     std::unique_ptr<Command> pCommand;
     std::unique_ptr<Descriptor> pDescriptor;
     std::unique_ptr<Texture> pTexture;
+
+    std::unique_ptr<LoadModel> pLoadModel;
 
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -167,6 +170,8 @@ private:
         pDescriptor->setBuffer(pBuffer.get());
         pBuffer->bufferInit(pTexture.get(), pSwapchain.get(), pRenderPass.get(), pCommand.get(), pDescriptor.get());
         std::cout << "pDescriptor\n";
+
+        pLoadModel = std::make_unique<LoadModel>(pBuffer.get());
         
         pCommand->setDescriptor(pDescriptor.get());
         pCommand->setGraphicsQueue(graphicsQueue);
@@ -175,16 +180,16 @@ private:
         pDescriptor->createDescriptorSetLayout();
         descriptorSetLayout = pDescriptor->getDescriptorSetLayout();
         
-        createGraphicsPipeline();
+        createGraphicsPipeline();       // pipeline
         std::cout << "create graphics pipeline\n";
         
         pCommand->createCommandPool();
         commandPool = pCommand->getCommandPool();
         std::cout << "pCommandPool\n";
         
-        createColorResources();
+        createColorResources();     // color resource
         std::cout << "color  resource\n";
-        createDepthResources();
+        createDepthResources();     // depth resource
         std::cout << "depth resource\n";
         
         pBuffer->createFramebuffers();
@@ -196,7 +201,9 @@ private:
         std::cout << "createTextureImageView\n";
         pTexture->createTextureSampler();
         std::cout << "createTextureSampler\n";
-        loadModel();
+        // loadModel();            // load model
+        pLoadModel->loadModel();
+
         std::cout << "load model\n";
         
         pBuffer->createVertexBuffer();
@@ -210,7 +217,7 @@ private:
         pCommand->createCommandBuffers();
         std::cout << "create command buffers\n";
 
-        createSyncObjects();
+        createSyncObjects();        // sync object
     }
 
     void mainLoop() {
@@ -481,46 +488,46 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void loadModel() {
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> materials;
-        std::string warn, err;
+    // void loadModel() {
+    //     tinyobj::attrib_t attrib;
+    //     std::vector<tinyobj::shape_t> shapes;
+    //     std::vector<tinyobj::material_t> materials;
+    //     std::string warn, err;
 
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-            throw std::runtime_error(err);
-        }
+    //     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+    //         throw std::runtime_error(err);
+    //     }
 
-        std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-        auto& vertices = pBuffer->getVertices();
-        auto& indices = pBuffer->getIndices();
+    //     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+    //     auto& vertices = pBuffer->getVertices();
+    //     auto& indices = pBuffer->getIndices();
 
-        for (const auto& shape : shapes) {
-            for (const auto& index : shape.mesh.indices) {
-                Vertex vertex{};
+    //     for (const auto& shape : shapes) {
+    //         for (const auto& index : shape.mesh.indices) {
+    //             Vertex vertex{};
 
-                vertex.pos = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
-                };
+    //             vertex.pos = {
+    //                 attrib.vertices[3 * index.vertex_index + 0],
+    //                 attrib.vertices[3 * index.vertex_index + 1],
+    //                 attrib.vertices[3 * index.vertex_index + 2]
+    //             };
 
-                vertex.texCoord = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-                };
+    //             vertex.texCoord = {
+    //                 attrib.texcoords[2 * index.texcoord_index + 0],
+    //                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+    //             };
 
-                vertex.color = {1.0f, 1.0f, 1.0f};
+    //             vertex.color = {1.0f, 1.0f, 1.0f};
 
-                if (uniqueVertices.count(vertex) == 0) {
-                    uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                    vertices.push_back(vertex);
-                }
+    //             if (uniqueVertices.count(vertex) == 0) {
+    //                 uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+    //                 vertices.push_back(vertex);
+    //             }
 
-                indices.push_back(uniqueVertices[vertex]);
-            }
-        }
-    }
+    //             indices.push_back(uniqueVertices[vertex]);
+    //         }
+    //     }
+    // }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
         VkCommandBufferBeginInfo beginInfo{};
