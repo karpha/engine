@@ -25,6 +25,7 @@ add_executable(Engine
     src/texture.cpp
     src/thirdParty.cpp
     src/loadmodel.cpp
+    src/pipeline.cpp
 )
 
 target_link_libraries(Engine PRIVATE

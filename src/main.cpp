@@ -40,6 +40,7 @@
 #include "descriptor.h"
 #include "texture.h"
 #include "loadModel.h"
+#include "pipeline.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -110,6 +111,7 @@ private:
     std::unique_ptr<Texture> pTexture;
 
     std::unique_ptr<LoadModel> pLoadModel;
+    std::unique_ptr<Pipeline> pPipeLine;
 
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -179,8 +181,12 @@ private:
         
         pDescriptor->createDescriptorSetLayout();
         descriptorSetLayout = pDescriptor->getDescriptorSetLayout();
-        
-        createGraphicsPipeline();       // pipeline
+
+        pPipeLine = std::make_unique<Pipeline>(pDevice.get(), pDescriptor.get(), pRenderPass.get());
+        // createGraphicsPipeline();       // pipeline
+        pPipeLine->createGraphicsPipeline();
+        graphicsPipeline = pPipeLine->getGraphicsPipeline();
+        pipelineLayout = pPipeLine->getPipelineLayout();
         std::cout << "create graphics pipeline\n";
         
         pCommand->createCommandPool();
@@ -487,47 +493,6 @@ private:
     bool hasStencilComponent(VkFormat format) {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
-
-    // void loadModel() {
-    //     tinyobj::attrib_t attrib;
-    //     std::vector<tinyobj::shape_t> shapes;
-    //     std::vector<tinyobj::material_t> materials;
-    //     std::string warn, err;
-
-    //     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-    //         throw std::runtime_error(err);
-    //     }
-
-    //     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-    //     auto& vertices = pBuffer->getVertices();
-    //     auto& indices = pBuffer->getIndices();
-
-    //     for (const auto& shape : shapes) {
-    //         for (const auto& index : shape.mesh.indices) {
-    //             Vertex vertex{};
-
-    //             vertex.pos = {
-    //                 attrib.vertices[3 * index.vertex_index + 0],
-    //                 attrib.vertices[3 * index.vertex_index + 1],
-    //                 attrib.vertices[3 * index.vertex_index + 2]
-    //             };
-
-    //             vertex.texCoord = {
-    //                 attrib.texcoords[2 * index.texcoord_index + 0],
-    //                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-    //             };
-
-    //             vertex.color = {1.0f, 1.0f, 1.0f};
-
-    //             if (uniqueVertices.count(vertex) == 0) {
-    //                 uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-    //                 vertices.push_back(vertex);
-    //             }
-
-    //             indices.push_back(uniqueVertices[vertex]);
-    //         }
-    //     }
-    // }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
         VkCommandBufferBeginInfo beginInfo{};
