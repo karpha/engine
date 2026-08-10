@@ -40,6 +40,7 @@ public:
 
     void setupDebugMessenger();
     void createSurface(Window* window);
+    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 private:
     VkInstance instance;  
     bool enableValidationLayers;
