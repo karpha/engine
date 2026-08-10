@@ -41,6 +41,7 @@
 #include "texture.h"
 #include "loadModel.h"
 #include "pipeline.h"
+#include "other.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -112,6 +113,7 @@ private:
 
     std::unique_ptr<LoadModel> pLoadModel;
     std::unique_ptr<Pipeline> pPipeLine;
+    std::unique_ptr<Other> pOther;
 
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -192,10 +194,16 @@ private:
         pCommand->createCommandPool();
         commandPool = pCommand->getCommandPool();
         std::cout << "pCommandPool\n";
-        
-        createColorResources();     // color resource
+
+        pOther = std::make_unique<Other>(pDevice.get(), pSwapchain.get(), pTexture.get(), pRenderPass.get(), pDescriptor.get());
+        colorImageView = pOther->getColorImageView();
+        depthImageView = pOther->getDepthImageView();
+
+        // createColorResources();     // color resource
+        pOther->createColorResources();
         std::cout << "color  resource\n";
-        createDepthResources();     // depth resource
+        // createDepthResources();     // depth resource
+        pOther->createDepthResources();
         std::cout << "depth resource\n";
         
         pBuffer->createFramebuffers();
@@ -209,7 +217,7 @@ private:
         std::cout << "createTextureSampler\n";
         // loadModel();            // load model
         pLoadModel->loadModel();
-
+        
         std::cout << "load model\n";
         
         pBuffer->createVertexBuffer();
@@ -222,8 +230,12 @@ private:
         
         pCommand->createCommandBuffers();
         std::cout << "create command buffers\n";
-
+        
         createSyncObjects();        // sync object
+        pOther->createSyncObjects();
+        imageAvailableSemaphores = pOther->getImageAvailableSemaphores();
+        renderFinishedSemaphores = pOther->getRenderFinishedSemaphores();
+        inFlightFences = pOther->getInFlightFences();
     }
 
     void mainLoop() {
