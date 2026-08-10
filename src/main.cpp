@@ -231,7 +231,7 @@ private:
         pCommand->createCommandBuffers();
         std::cout << "create command buffers\n";
         
-        createSyncObjects();        // sync object
+        // createSyncObjects();        // sync objects
         pOther->createSyncObjects();
         imageAvailableSemaphores = pOther->getImageAvailableSemaphores();
         renderFinishedSemaphores = pOther->getRenderFinishedSemaphores();
@@ -331,8 +331,10 @@ private:
 
         pSwapchain->createSwapChain(pDevice.get(),physicalDevice,pWindow.get(),pInstance.get());
         pSwapchain->createImageViews(pDevice.get());
-        createColorResources();
-        createDepthResources();
+        // createColorResources();
+        pOther->createColorResources();
+        // createDepthResources();
+        pOther->createDepthResources();
         pBuffer->createFramebuffers();
     }
 
@@ -478,30 +480,6 @@ private:
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 
-    void createColorResources() {
-        VkFormat colorFormat = pSwapchain->getSwapchainImageFormat();
-        VkImage colorImage = pTexture->getColorImage();
-        VkDeviceMemory colorImageMemory = pTexture->getColorImageMemory();
-
-        pTexture->createImage(pSwapchain->getSwapchainExtent().width, pSwapchain->getSwapchainExtent().height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
-        pTexture->setColorImage(colorImage);
-        pTexture->setColorImageMemory(colorImageMemory);
-        colorImageView = pSwapchain->createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, pDevice.get());
-        pTexture->setColorImageView(colorImageView);
-    }
-
-    void createDepthResources() {
-        VkFormat depthFormat = pRenderPass->findDepthFormat(pDevice.get());
-        VkImage depthImage = pTexture->getDepthImage();
-        VkDeviceMemory depthImageMemory = pTexture->getDepthImageMemory();
-
-        pTexture->createImage(pSwapchain->getSwapchainExtent().width, pSwapchain->getSwapchainExtent().height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-        pTexture->setDepthImage(depthImage);
-        pTexture->setDepthImageMemory(depthImageMemory);
-        depthImageView = pSwapchain->createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, pDevice.get());
-        pTexture->setDepthImageView(depthImageView);
-    }
-
     bool hasStencilComponent(VkFormat format) {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
@@ -560,27 +538,6 @@ private:
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
-        }
-    }
-
-    void createSyncObjects() {
-        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create synchronization objects for a frame!");
-            }
         }
     }
 
