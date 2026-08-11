@@ -98,8 +98,8 @@ private:
     std::unique_ptr<Other> pOther;
 
 
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkSampleCountFlagBits msaaSamples;
+    // VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    // VkSampleCountFlagBits msaaSamples;
     VkDevice device = VK_NULL_HANDLE;
 
     VkQueue graphicsQueue;
@@ -133,15 +133,15 @@ private:
         pDevice->createLogicalDevice();
         std::cout << "pDevice\n";
         
-        physicalDevice = pDevice->getPhysicalDevice();
+        // physicalDevice = pDevice->getPhysicalDevice();
         device = pDevice->getDevice();
         graphicsQueue = pDevice->getGraphicsQueue();
         presentQueue = pDevice->getPresentQueue();
-        msaaSamples = pDevice->getMsaaSamples();
+        // msaaSamples = pDevice->getMsaaSamples();
         std::cout << "GraphicsQueue\n";
         
         pSwapchain = std::make_unique<SwapChain>(pDevice.get());
-        pSwapchain->createSwapChain(pDevice.get(),physicalDevice,pWindow.get(),pInstance.get());
+        pSwapchain->createSwapChain(pDevice.get(),pDevice->getPhysicalDevice(),pWindow.get(),pInstance.get());
         pSwapchain->createImageViews(pDevice.get());
         std::cout << "pSwapchain\n";
         
@@ -311,7 +311,7 @@ private:
 
         cleanupSwapChain();
 
-        pSwapchain->createSwapChain(pDevice.get(),physicalDevice,pWindow.get(),pInstance.get());
+        pSwapchain->createSwapChain(pDevice.get(),pDevice->getPhysicalDevice(),pWindow.get(),pInstance.get());
         pSwapchain->createImageViews(pDevice.get());
         // createColorResources();
         pOther->createColorResources();
