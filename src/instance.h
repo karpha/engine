@@ -41,6 +41,7 @@ public:
     void setupDebugMessenger();
     void createSurface(Window* window);
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 private:
     VkInstance instance;  
     bool enableValidationLayers;
@@ -48,6 +49,6 @@ private:
         "VK_LAYER_KHRONOS_validation"
     };
 
-    VkSurfaceKHR surface;
-    VkDebugUtilsMessengerEXT debugMessenger;
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 };

@@ -80,11 +80,32 @@ public:
         device = dev;
     }
     ~Buffer(){
-        vkDestroyBuffer(device->getDevice(), indexBuffer, nullptr);
-        vkFreeMemory(device->getDevice(), indexBufferMemory, nullptr);
-        vkDestroyBuffer(device->getDevice(), vertexBuffer, nullptr);
-        vkFreeMemory(device->getDevice(), vertexBufferMemory, nullptr);
-    
+        // 先销毁 uniform buffers 及其内存
+        for (size_t i = 0; i < uniformBuffers.size(); i++) {
+            vkDestroyBuffer(device->getDevice(), uniformBuffers[i], nullptr);
+            vkFreeMemory(device->getDevice(), uniformBuffersMemory[i], nullptr);
+        }
+        uniformBuffers.clear();
+        uniformBuffersMemory.clear();
+        uniformBuffersMapped.clear();
+
+        // 再销毁 vertex / index buffers 及其内存
+        if (indexBuffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(device->getDevice(), indexBuffer, nullptr);
+            indexBuffer = VK_NULL_HANDLE;
+        }
+        if (indexBufferMemory != VK_NULL_HANDLE) {
+            vkFreeMemory(device->getDevice(), indexBufferMemory, nullptr);
+            indexBufferMemory = VK_NULL_HANDLE;
+        }
+        if (vertexBuffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(device->getDevice(), vertexBuffer, nullptr);
+            vertexBuffer = VK_NULL_HANDLE;
+        }
+        if (vertexBufferMemory != VK_NULL_HANDLE) {
+            vkFreeMemory(device->getDevice(), vertexBufferMemory, nullptr);
+            vertexBufferMemory = VK_NULL_HANDLE;
+        }
     }
     void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd, Descriptor* desc){
         texture = txture;
@@ -146,10 +167,10 @@ private:
     std::vector<uint32_t> indices;
     std::vector<Vertex> vertices;
 
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    VkBuffer vertexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer indexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
 
     Descriptor* descrpt;
     Device* device;

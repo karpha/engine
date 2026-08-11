@@ -11,6 +11,17 @@ public:
         device = pDevice;
     };
     ~SwapChain(){
+        // 先销毁 framebuffers 与 image views，再销毁 swapchain（在 Device 销毁之前，设备仍有效）
+        for (auto framebuffer : swapChainFramebuffers) {
+            vkDestroyFramebuffer(device->getDevice(), framebuffer, nullptr);
+        }
+        swapChainFramebuffers.clear();
+
+        for (auto imageView : swapChainImageViews) {
+            vkDestroyImageView(device->getDevice(), imageView, nullptr);
+        }
+        swapChainImageViews.clear();
+
         destroySwapChain();
     };
 

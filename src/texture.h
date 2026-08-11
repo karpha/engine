@@ -36,14 +36,33 @@ public:
             textureImageMemory = VK_NULL_HANDLE;
         }
 
-        // if (colorImageView != VK_NULL_HANDLE)
+        // 销毁 MSAA color 资源
+        if (colorImageView != VK_NULL_HANDLE) {
             vkDestroyImageView(device->getDevice(), colorImageView, nullptr);
+            colorImageView = VK_NULL_HANDLE;
+        }
+        if (colorImage != VK_NULL_HANDLE) {
             vkDestroyImage(device->getDevice(), colorImage, nullptr);
-            vkFreeMemory(device->getDevice(), colorImageMemory, nullptr); 
+            colorImage = VK_NULL_HANDLE;
+        }
+        if (colorImageMemory != VK_NULL_HANDLE) {
+            vkFreeMemory(device->getDevice(), colorImageMemory, nullptr);
+            colorImageMemory = VK_NULL_HANDLE;
+        }
 
+        // 销毁 depth 资源
+        if (depthImageView != VK_NULL_HANDLE) {
             vkDestroyImageView(device->getDevice(), depthImageView, nullptr);
+            depthImageView = VK_NULL_HANDLE;
+        }
+        if (depthImage != VK_NULL_HANDLE) {
             vkDestroyImage(device->getDevice(), depthImage, nullptr);
+            depthImage = VK_NULL_HANDLE;
+        }
+        if (depthImageMemory != VK_NULL_HANDLE) {
             vkFreeMemory(device->getDevice(), depthImageMemory, nullptr);
+            depthImageMemory = VK_NULL_HANDLE;
+        }
     }
 
     Texture(const Texture&) = delete;

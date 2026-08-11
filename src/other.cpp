@@ -7,6 +7,20 @@
 #include "renderpass.h"
 #include "descriptor.h" 
 
+// 在实现文件中定义析构函数，因为头文件里 Device/Descriptor 只是前向声明（不完整类型），
+// 无法在头文件内调用其成员函数。这里类型完整，可以安全销毁同步对象。
+Other::~Other() {
+    // 未调用 createSyncObjects 时 vector 为空，先判空再销毁，避免越界访问
+    size_t count = imageAvailableSemaphores.size();
+    if (device == nullptr) {
+        return;
+    }
+    for (size_t i = 0; i < count; i++) {
+        vkDestroySemaphore(device->getDevice(), renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(device->getDevice(), imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(device->getDevice(), inFlightFences[i], nullptr);
+    }
+}
 
 void Other::createColorResources() {
     VkFormat colorFormat = pSwapchain->getSwapchainImageFormat();

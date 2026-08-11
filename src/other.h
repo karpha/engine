@@ -18,6 +18,7 @@ public:
         pRenderpass = rp;
         pDescriptor = descr;
     }
+    ~Other();
 
     Other(const Other&) = delete;
     Other& operator=(const Other&) = delete;
@@ -44,17 +45,17 @@ public:
     }
 
 private:
-    VkImageView colorImageView;
-    VkImageView depthImageView;
+    VkImageView colorImageView = VK_NULL_HANDLE;
+    VkImageView depthImageView = VK_NULL_HANDLE;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;      //使用vector容器定义的变量不需要手动释放，会自动管理内存与生命周期
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
 
-    Device* device;
-    SwapChain* pSwapchain;
-    Texture* pTexture;
-    RenderPass* pRenderpass;
-    Descriptor* pDescriptor;
+    Device* device = nullptr;
+    SwapChain* pSwapchain = nullptr;
+    Texture* pTexture = nullptr;
+    RenderPass* pRenderpass = nullptr;
+    Descriptor* pDescriptor = nullptr;
 
 };

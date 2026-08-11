@@ -47,9 +47,27 @@ Instance::Instance( const std::string& appName ,
         }
     }
     Instance::~Instance(){
-        if (instance != VK_NULL_HANDLE)
-        vkDestroyInstance(instance, nullptr);
-    }  
+        // 先销毁从 instance 创建的 surface 与 debug messenger，再销毁 instance
+        if (surface != VK_NULL_HANDLE) {
+            vkDestroySurfaceKHR(instance, surface, nullptr);
+            surface = VK_NULL_HANDLE;
+        }
+        if (debugMessenger != VK_NULL_HANDLE) {
+            DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+            debugMessenger = VK_NULL_HANDLE;
+        }
+        if (instance != VK_NULL_HANDLE) {
+            vkDestroyInstance(instance, nullptr);
+            instance = VK_NULL_HANDLE;
+        }
+    }
+
+    void Instance::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            func(instance, debugMessenger, pAllocator);
+        }
+    }
     
     bool Instance::checkValidationLayerSupport(){
          uint32_t layerCount;
