@@ -105,14 +105,15 @@ private:
     // VkQueue graphicsQueue;
     // VkQueue presentQueue;
 
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+    // VkDescriptorSetLayout descriptorSetLayout;
+    // 👇
+    // VkPipelineLayout pipelineLayout;
+    // VkPipeline graphicsPipeline;
 
-    VkCommandPool commandPool;
-
-    VkImageView colorImageView;
-    VkImageView depthImageView;
+    // VkCommandPool commandPool;
+    // 👇
+    // VkImageView colorImageView;
+    // VkImageView depthImageView;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -164,22 +165,22 @@ private:
         std::cout << "pCommand\n";
         
         pDescriptor->createDescriptorSetLayout();
-        descriptorSetLayout = pDescriptor->getDescriptorSetLayout();
+        // descriptorSetLayout = pDescriptor->getDescriptorSetLayout();
 
         pPipeLine = std::make_unique<Pipeline>(pDevice.get(), pDescriptor.get(), pRenderPass.get());
         // createGraphicsPipeline();       // pipeline
         pPipeLine->createGraphicsPipeline();
-        graphicsPipeline = pPipeLine->getGraphicsPipeline();
-        pipelineLayout = pPipeLine->getPipelineLayout();
+        // graphicsPipeline = pPipeLine->getGraphicsPipeline();
+        // pipelineLayout = pPipeLine->getPipelineLayout();
         std::cout << "create graphics pipeline\n";
         
         pCommand->createCommandPool();
-        commandPool = pCommand->getCommandPool();
+        // commandPool = pCommand->getCommandPool();
         std::cout << "pCommandPool\n";
 
         pOther = std::make_unique<Other>(pDevice.get(), pSwapchain.get(), pTexture.get(), pRenderPass.get(), pDescriptor.get());
-        colorImageView = pOther->getColorImageView();
-        depthImageView = pOther->getDepthImageView();
+        // colorImageView = pOther->getColorImageView();
+        // depthImageView = pOther->getDepthImageView();
 
         // createColorResources();     // color resource
         pOther->createColorResources();
@@ -252,8 +253,8 @@ private:
     void cleanup() {
         cleanupSwapChain();
 
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipeline(device, pPipeLine->getGraphicsPipeline(), nullptr);
+        vkDestroyPipelineLayout(device, pPipeLine->getPipelineLayout(), nullptr);
         vkDestroyRenderPass(device, pRenderPass->getRenderpass(), nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -348,7 +349,7 @@ private:
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pPipeLine->getGraphicsPipeline());
 
             VkViewport viewport{};
             viewport.x = 0.0f;
@@ -370,7 +371,7 @@ private:
 
             vkCmdBindIndexBuffer(commandBuffer, pBuffer->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &(pDescriptor->getDescriptorSets())[currentFrame], 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pPipeLine->getPipelineLayout(), 0, 1, &(pDescriptor->getDescriptorSets())[currentFrame], 0, nullptr);
 
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(pBuffer->getIndices().size()), 1, 0, 0, 0);
 
