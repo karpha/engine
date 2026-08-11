@@ -81,7 +81,7 @@ public:
     }
     ~Buffer(){
         // 先销毁 uniform buffers 及其内存
-        for (size_t i = 0; i < uniformBuffers.size(); i++) {
+        for (size_t i = 0; i < uniformBuffers.size(); i++) {        // vulkan 类型变量，先使用vkdestroy释放资源，之后再用vector的clear()函数
             vkDestroyBuffer(device->getDevice(), uniformBuffers[i], nullptr);
             vkFreeMemory(device->getDevice(), uniformBuffersMemory[i], nullptr);
         }

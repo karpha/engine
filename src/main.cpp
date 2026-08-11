@@ -176,7 +176,7 @@ private:
         vkDeviceWaitIdle(device);
     }
 
-    void cleanupSwapChain() {
+    void cleanupSwapChain() {       // for window resized
         vkDestroyImageView(device, pTexture->getDepthImageView(), nullptr);
         vkDestroyImage(device, pTexture->getDepthImage(), nullptr);
         vkFreeMemory(device, pTexture->getDepthImageMemory(), nullptr);
@@ -204,44 +204,7 @@ private:
         pSwapchain->destroySwapChain();
     }
 
-    void cleanup() {
-        cleanupSwapChain();
-
-        // 渲染通道、描述符、纹理、命令池等对象由各自 wrapper 的 RAII 析构函数负责销毁
-        // （pRenderPass/pDescriptor/pTexture/pCommand/pSwapchain 在 run() 返回后自动析构）
-
-        // Buffer 无析构函数，手动销毁 uniform/vertex/index buffer
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroyBuffer(device, pBuffer->getUniformBuffers()[i], nullptr);
-            vkFreeMemory(device, pBuffer->getUniformBuffersMemory()[i], nullptr);
-        }
-
-        vkDestroyBuffer(device, pBuffer->getIndexBuffer(), nullptr);
-        vkFreeMemory(device, pBuffer->getIndexBufferMemory(), nullptr);
-
-        vkDestroyBuffer(device, pBuffer->getVertexBuffer(), nullptr);
-        vkFreeMemory(device, pBuffer->getVertexBufferMemory(), nullptr);
-
-        // Other 无析构函数，手动销毁同步对象
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device, inFlightFences[i], nullptr);
-        }
-
-        // Instance 析构只销毁 instance，不销毁 messenger/surface，这里手动销毁
-        if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(pInstance->getInstance(), pInstance->getDebugMessenger(), nullptr);
-        }
-
-        vkDestroySurfaceKHR(pInstance->getInstance(), pInstance->getSurface(), nullptr);
-
-        glfwDestroyWindow(pWindow->getWindow());
-
-        glfwTerminate();
-    }
-
-    void recreateSwapChain() {
+    void recreateSwapChain() {      // for window resized
         int width = 0, height = 0;
         glfwGetFramebufferSize(pWindow->getWindow(), &width, &height);
         while (width == 0 || height == 0) {
@@ -344,7 +307,7 @@ private:
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, pSwapchain->getSwapchain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {       // for window resized
             recreateSwapChain();
             return;
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {

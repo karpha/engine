@@ -7,6 +7,7 @@ class Window{
 public:
     Window(int Width, int Height, std::string &windowName);
     ~Window();
+
     Window(const Window&) = delete;
     Window& operator=(const Window&) = delete;
 
@@ -37,9 +38,9 @@ public:
     }
     
 private:
-GLFWwindow* window;
-std::string windowName;
-int Width;
-int Height;
-bool frameBufferResized = false;
+    GLFWwindow* window;
+    std::string windowName;
+    int Width;
+    int Height;
+    bool frameBufferResized = false;
 };

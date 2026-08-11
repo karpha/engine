@@ -26,7 +26,8 @@ public:
         return renderpass;
     }
 private:
+    VkRenderPass renderpass = VK_NULL_HANDLE;
+    
     Device* device;
     SwapChain* swapchain;
-    VkRenderPass renderpass = VK_NULL_HANDLE;
 };

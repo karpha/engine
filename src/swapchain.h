@@ -72,12 +72,12 @@ public:
     }
 
 private:
-    Device* device;
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    std::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
+    std::vector<VkImage> swapChainImages;       //  交换链自身分配、拥有， 获取时通过vkGetSwapchainImagesKHR函数获取而不是使用vkcreate创建
+    VkFormat swapChainImageFormat;      //  只是一个枚举值，不需要销毁
+    VkExtent2D swapChainExtent;         //  只是一个结构体数据，不需要销毁
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
+    Device* device;
 };

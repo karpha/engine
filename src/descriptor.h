@@ -47,8 +47,8 @@ private:
     Device* device;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-    std::vector<VkDescriptorSet> descriptorSets;
-    // VkDescriptorSet descriptorSet;
+    std::vector<VkDescriptorSet> descriptorSets;        // 与command buffer同理，是从descriptor pool分配的，不是通过vkcreate函数创建的
+    // 没有对应的vkDestroyDescriptorSets函数，当销毁descriptor pool时，该pool分配的descriptor set会自动释放
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     Buffer* buffer;

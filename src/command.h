@@ -38,8 +38,9 @@ public:
 
 private:
     VkCommandPool commandPool = VK_NULL_HANDLE;
-    std::vector<VkCommandBuffer> commandBuffers;
-    VkQueue graphicsQueue;
+    std::vector<VkCommandBuffer> commandBuffers;       // 销毁命令池时，从该池分配的命令缓冲区会被自动释放
+    VkQueue graphicsQueue;      // 不是独立分配的资源，属于逻辑设备的一部分，没有对应的vkdestroy函数，
+    // 队列的声明周期由逻辑设备管理，当vkDestroyDevice时，队列随之销毁
 
     Device* device;
     Descriptor* descriptor;
