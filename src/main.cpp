@@ -71,13 +71,12 @@ class HelloTriangleApplication {
 
         initVulkan();
         mainLoop();
-        cleanup();
+        // cleanup();
     }
 
 private:
     std::unique_ptr<Instance> pInstance;
     std::unique_ptr<Window> pWindow;
-    // VkDebugUtilsMessengerEXT debugMessenger;
     std::unique_ptr<Device> pDevice;
     std::unique_ptr<SwapChain> pSwapchain;
     std::unique_ptr<RenderPass> pRenderPass;
@@ -181,43 +180,41 @@ private:
         vkDestroyImageView(device, pTexture->getDepthImageView(), nullptr);
         vkDestroyImage(device, pTexture->getDepthImage(), nullptr);
         vkFreeMemory(device, pTexture->getDepthImageMemory(), nullptr);
+        pTexture->setDepthImageView(VK_NULL_HANDLE);
+        pTexture->setDepthImage(VK_NULL_HANDLE);
+        pTexture->setDepthImageMemory(VK_NULL_HANDLE);
 
         vkDestroyImageView(device, pTexture->getColorImageView(), nullptr);
         vkDestroyImage(device, pTexture->getColorImage(), nullptr);
         vkFreeMemory(device, pTexture->getColorImageMemory(), nullptr);
+        pTexture->setColorImageView(VK_NULL_HANDLE);
+        pTexture->setColorImage(VK_NULL_HANDLE);
+        pTexture->setColorImageMemory(VK_NULL_HANDLE);
 
         for (auto framebuffer : pSwapchain->getSwapchainFrameBuffers()) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
+        pSwapchain->getSwapchainFrameBuffers().clear();
 
         for (auto imageView : pSwapchain->getSwapchainImageViews()) {
             vkDestroyImageView(device, imageView, nullptr);
         }
+        pSwapchain->getSwapchainImageViews().clear();
 
-        vkDestroySwapchainKHR(device, pSwapchain->getSwapchain(), nullptr);
+        pSwapchain->destroySwapChain();
     }
 
     void cleanup() {
         cleanupSwapChain();
 
-        vkDestroyPipeline(device, pPipeLine->getGraphicsPipeline(), nullptr);
-        vkDestroyPipelineLayout(device, pPipeLine->getPipelineLayout(), nullptr);
-        vkDestroyRenderPass(device, pRenderPass->getRenderpass(), nullptr);
+        // 渲染通道、描述符、纹理、命令池等对象由各自 wrapper 的 RAII 析构函数负责销毁
+        // （pRenderPass/pDescriptor/pTexture/pCommand/pSwapchain 在 run() 返回后自动析构）
 
+        // Buffer 无析构函数，手动销毁 uniform/vertex/index buffer
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroyBuffer(device, pBuffer->getUniformBuffers()[i], nullptr);
             vkFreeMemory(device, pBuffer->getUniformBuffersMemory()[i], nullptr);
         }
-
-        vkDestroyDescriptorPool(device, pDescriptor->getDescriptorPool(), nullptr);
-
-        vkDestroySampler(device, pTexture->getTextureSampler(), nullptr);
-        vkDestroyImageView(device, pTexture->getTextureImageView(), nullptr);
-
-        vkDestroyImage(device, pTexture->getTextureImage(), nullptr);
-        vkFreeMemory(device, pTexture->getTextureImageMemory(), nullptr);
-
-        vkDestroyDescriptorSetLayout(device, pDescriptor->getDescriptorSetLayout(), nullptr);
 
         vkDestroyBuffer(device, pBuffer->getIndexBuffer(), nullptr);
         vkFreeMemory(device, pBuffer->getIndexBufferMemory(), nullptr);
@@ -225,17 +222,14 @@ private:
         vkDestroyBuffer(device, pBuffer->getVertexBuffer(), nullptr);
         vkFreeMemory(device, pBuffer->getVertexBufferMemory(), nullptr);
 
+        // Other 无析构函数，手动销毁同步对象
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
             vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(device, inFlightFences[i], nullptr);
         }
 
-        vkDestroyCommandPool(device, pCommand->getCommandPool(), nullptr);
-
-        pDevice.reset();
-        device = VK_NULL_HANDLE;
-
+        // Instance 析构只销毁 instance，不销毁 messenger/surface，这里手动销毁
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(pInstance->getInstance(), pInstance->getDebugMessenger(), nullptr);
         }

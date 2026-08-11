@@ -79,6 +79,13 @@ public:
     Buffer(Device* dev){
         device = dev;
     }
+    ~Buffer(){
+        vkDestroyBuffer(device->getDevice(), indexBuffer, nullptr);
+        vkFreeMemory(device->getDevice(), indexBufferMemory, nullptr);
+        vkDestroyBuffer(device->getDevice(), vertexBuffer, nullptr);
+        vkFreeMemory(device->getDevice(), vertexBufferMemory, nullptr);
+    
+    }
     void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd, Descriptor* desc){
         texture = txture;
         swapchain = sw;

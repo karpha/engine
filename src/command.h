@@ -12,7 +12,10 @@ public:
         device = dev;
     }
     ~Command(){
-        vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);
+        if (commandPool != VK_NULL_HANDLE) {
+            vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);
+            commandPool = VK_NULL_HANDLE;
+        }
     }
     void setDescriptor(Descriptor* des){
         descriptor = des;
@@ -34,7 +37,7 @@ public:
     }
 
 private:
-    VkCommandPool commandPool;
+    VkCommandPool commandPool = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> commandBuffers;
     VkQueue graphicsQueue;
 

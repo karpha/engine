@@ -11,8 +11,10 @@ public:
         swapchain = sw;
     }
     ~RenderPass(){
-        if (renderpass != VK_NULL_HANDLE)
+        if (renderpass != VK_NULL_HANDLE) {
             vkDestroyRenderPass(device->getDevice(),renderpass,nullptr);
+            renderpass = VK_NULL_HANDLE;
+        }
     }
 
     RenderPass(const RenderPass&) = delete;
@@ -26,5 +28,5 @@ public:
 private:
     Device* device;
     SwapChain* swapchain;
-    VkRenderPass renderpass;
+    VkRenderPass renderpass = VK_NULL_HANDLE;
 };

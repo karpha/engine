@@ -11,8 +11,15 @@ public:
         device = pDevice;
     };
     ~SwapChain(){
-        if (swapchain != VK_NULL_HANDLE)
-            vkDestroySwapchainKHR(device->getDevice(), swapchain,nullptr);
+        destroySwapChain();
+    };
+
+    // 销毁交换链并置空，供 recreateSwapChain 和析构函数调用（幂等）
+    void destroySwapChain(){
+        if (swapchain != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(device->getDevice(), swapchain, nullptr);
+            swapchain = VK_NULL_HANDLE;
+        }
     };
 
     SwapChain(const SwapChain&) = delete;
@@ -55,7 +62,7 @@ public:
 
 private:
     Device* device;
-    VkSwapchainKHR swapchain;
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;

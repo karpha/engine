@@ -19,10 +19,31 @@ public:
         command = cmd;
     }
     ~Texture(){
-        vkDestroyImageView(device->getDevice(), textureImageView, nullptr);
-        vkDestroySampler(device->getDevice(), textureSampler,nullptr); 
-        vkDestroyImage(device->getDevice(), textureImage, nullptr);
-        vkFreeMemory(device->getDevice(), textureImageMemory, nullptr);
+        if (textureImageView != VK_NULL_HANDLE) {
+            vkDestroyImageView(device->getDevice(), textureImageView, nullptr);
+            textureImageView = VK_NULL_HANDLE;
+        }
+        if (textureSampler != VK_NULL_HANDLE) {
+            vkDestroySampler(device->getDevice(), textureSampler, nullptr);
+            textureSampler = VK_NULL_HANDLE;
+        }
+        if (textureImage != VK_NULL_HANDLE) {
+            vkDestroyImage(device->getDevice(), textureImage, nullptr);
+            textureImage = VK_NULL_HANDLE;
+        }
+        if (textureImageMemory != VK_NULL_HANDLE) {
+            vkFreeMemory(device->getDevice(), textureImageMemory, nullptr);
+            textureImageMemory = VK_NULL_HANDLE;
+        }
+
+        // if (colorImageView != VK_NULL_HANDLE)
+            vkDestroyImageView(device->getDevice(), colorImageView, nullptr);
+            vkDestroyImage(device->getDevice(), colorImage, nullptr);
+            vkFreeMemory(device->getDevice(), colorImageMemory, nullptr); 
+
+            vkDestroyImageView(device->getDevice(), depthImageView, nullptr);
+            vkDestroyImage(device->getDevice(), depthImage, nullptr);
+            vkFreeMemory(device->getDevice(), depthImageMemory, nullptr);
     }
 
     Texture(const Texture&) = delete;
@@ -90,20 +111,20 @@ public:
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
 private:
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
+    VkImage textureImage = VK_NULL_HANDLE;
+    VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
+    VkImageView textureImageView = VK_NULL_HANDLE;
+    VkSampler textureSampler = VK_NULL_HANDLE;
     const std::string TEXTURE_PATH = "textures/viking_room.png";
-    uint32_t mipLevels;
+    uint32_t mipLevels = 1;
 
-    VkImage colorImage;
-    VkDeviceMemory colorImageMemory;
-    VkImageView colorImageView;
+    VkImage colorImage = VK_NULL_HANDLE;
+    VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
+    VkImageView colorImageView = VK_NULL_HANDLE;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    VkImage depthImage = VK_NULL_HANDLE;
+    VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
+    VkImageView depthImageView = VK_NULL_HANDLE;
 
     Device* device;
     Buffer* buffer;
