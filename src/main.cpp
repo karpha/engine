@@ -43,12 +43,6 @@
 #include "pipeline.h"
 #include "other.h"
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
-
-const std::string MODEL_PATH = "models/viking_room.obj";
-const std::string TEXTURE_PATH = "textures/viking_room.png";
-
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<const char*> validationLayers = {
@@ -83,7 +77,7 @@ class HelloTriangleApplication {
 private:
     std::unique_ptr<Instance> pInstance;
     std::unique_ptr<Window> pWindow;
-    VkDebugUtilsMessengerEXT debugMessenger;
+    // VkDebugUtilsMessengerEXT debugMessenger;
     std::unique_ptr<Device> pDevice;
     std::unique_ptr<SwapChain> pSwapchain;
     std::unique_ptr<RenderPass> pRenderPass;
@@ -97,23 +91,7 @@ private:
     std::unique_ptr<Pipeline> pPipeLine;
     std::unique_ptr<Other> pOther;
 
-
-    // VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    // VkSampleCountFlagBits msaaSamples;
     VkDevice device = VK_NULL_HANDLE;
-
-    // VkQueue graphicsQueue;
-    // VkQueue presentQueue;
-
-    // VkDescriptorSetLayout descriptorSetLayout;
-    // 👇
-    // VkPipelineLayout pipelineLayout;
-    // VkPipeline graphicsPipeline;
-
-    // VkCommandPool commandPool;
-    // 👇
-    // VkImageView colorImageView;
-    // VkImageView depthImageView;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -124,7 +102,6 @@ private:
 
     void initVulkan() {
         pInstance = std::make_unique<Instance>("Hello Triangle", "No Engine", true);
-        std::cout << "Got instance from instance component\n";
         pInstance->setupDebugMessenger();
         pInstance->createSurface(pWindow.get());
         std::cout << "pInstance\n";
@@ -134,11 +111,7 @@ private:
         pDevice->createLogicalDevice();
         std::cout << "pDevice\n";
         
-        // physicalDevice = pDevice->getPhysicalDevice();
         device = pDevice->getDevice();
-        // graphicsQueue = pDevice->getGraphicsQueue();
-        // presentQueue = pDevice->getPresentQueue();
-        // msaaSamples = pDevice->getMsaaSamples();
         std::cout << "GraphicsQueue\n";
         
         pSwapchain = std::make_unique<SwapChain>(pDevice.get());
@@ -162,59 +135,33 @@ private:
         
         pCommand->setDescriptor(pDescriptor.get());
         pCommand->setGraphicsQueue(pDevice->getGraphicsQueue());
-        std::cout << "pCommand\n";
         
         pDescriptor->createDescriptorSetLayout();
-        // descriptorSetLayout = pDescriptor->getDescriptorSetLayout();
 
         pPipeLine = std::make_unique<Pipeline>(pDevice.get(), pDescriptor.get(), pRenderPass.get());
-        // createGraphicsPipeline();       // pipeline
         pPipeLine->createGraphicsPipeline();
-        // graphicsPipeline = pPipeLine->getGraphicsPipeline();
-        // pipelineLayout = pPipeLine->getPipelineLayout();
-        std::cout << "create graphics pipeline\n";
         
         pCommand->createCommandPool();
-        // commandPool = pCommand->getCommandPool();
-        std::cout << "pCommandPool\n";
 
         pOther = std::make_unique<Other>(pDevice.get(), pSwapchain.get(), pTexture.get(), pRenderPass.get(), pDescriptor.get());
-        // colorImageView = pOther->getColorImageView();
-        // depthImageView = pOther->getDepthImageView();
-
-        // createColorResources();     // color resource
         pOther->createColorResources();
-        std::cout << "color  resource\n";
-        // createDepthResources();     // depth resource
         pOther->createDepthResources();
-        std::cout << "depth resource\n";
         
         pBuffer->createFramebuffers();
-        std::cout << "createFramebuffers\n";
         
         pTexture->createTextureImage();
-        std::cout << "createTextureImage\n";
         pTexture->createTextureImageView();
-        std::cout << "createTextureImageView\n";
         pTexture->createTextureSampler();
-        std::cout << "createTextureSampler\n";
-        // loadModel();            // load model
         pLoadModel->loadModel();
-        
-        std::cout << "load model\n";
         
         pBuffer->createVertexBuffer();
         pBuffer->createIndexBuffer();
         pBuffer->createUniformBuffers();
-        std::cout << "uniform buffer\n";
         
         pDescriptor->createDescriptorPool();
         pDescriptor->createDescriptorSets();
         
         pCommand->createCommandBuffers();
-        std::cout << "create command buffers\n";
-        
-        // createSyncObjects();        // sync objects
         pOther->createSyncObjects();
         imageAvailableSemaphores = pOther->getImageAvailableSemaphores();
         renderFinishedSemaphores = pOther->getRenderFinishedSemaphores();
@@ -290,7 +237,7 @@ private:
         device = VK_NULL_HANDLE;
 
         if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(pInstance->getInstance(), debugMessenger, nullptr);
+            DestroyDebugUtilsMessengerEXT(pInstance->getInstance(), pInstance->getDebugMessenger(), nullptr);
         }
 
         vkDestroySurfaceKHR(pInstance->getInstance(), pInstance->getSurface(), nullptr);
