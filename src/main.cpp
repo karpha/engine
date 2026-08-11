@@ -102,8 +102,8 @@ private:
     // VkSampleCountFlagBits msaaSamples;
     VkDevice device = VK_NULL_HANDLE;
 
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
+    // VkQueue graphicsQueue;
+    // VkQueue presentQueue;
 
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
@@ -135,8 +135,8 @@ private:
         
         // physicalDevice = pDevice->getPhysicalDevice();
         device = pDevice->getDevice();
-        graphicsQueue = pDevice->getGraphicsQueue();
-        presentQueue = pDevice->getPresentQueue();
+        // graphicsQueue = pDevice->getGraphicsQueue();
+        // presentQueue = pDevice->getPresentQueue();
         // msaaSamples = pDevice->getMsaaSamples();
         std::cout << "GraphicsQueue\n";
         
@@ -160,7 +160,7 @@ private:
         pLoadModel = std::make_unique<LoadModel>(pBuffer.get());
         
         pCommand->setDescriptor(pDescriptor.get());
-        pCommand->setGraphicsQueue(graphicsQueue);
+        pCommand->setGraphicsQueue(pDevice->getGraphicsQueue());
         std::cout << "pCommand\n";
         
         pDescriptor->createDescriptorSetLayout();
@@ -432,7 +432,7 @@ private:
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        if (vkQueueSubmit(pDevice->getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
@@ -448,7 +448,7 @@ private:
 
         presentInfo.pImageIndices = &imageIndex;
 
-        result = vkQueuePresentKHR(presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(pDevice->getPresentQueue() , &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
             framebufferResized = false;
