@@ -64,19 +64,18 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 class HelloTriangleApplication {
     public:
-    std::string windowName = "renderer";
     void run() {
-        pWindow = std::make_unique<Window>(800, 600, windowName);
-        pWindow->initWindow();
-
         initVulkan();
         mainLoop();
         // cleanup();
     }
 
 private:
-    std::unique_ptr<Instance> pInstance;
-    std::unique_ptr<Window> pWindow;
+    // RAII：直接成员，按声明顺序构造（windowName -> window -> instance）
+    std::string windowName = "renderer";
+    Window window{800, 600, windowName};
+    Instance instance{"Hello Triangle", "No Engine", true, window};
+
     std::unique_ptr<Device> pDevice;
     std::unique_ptr<SwapChain> pSwapchain;
     std::unique_ptr<RenderPass> pRenderPass;
@@ -100,13 +99,10 @@ private:
     bool framebufferResized = false;
 
     void initVulkan() {
-        pInstance = std::make_unique<Instance>("Hello Triangle", "No Engine", true);
-        pInstance->setupDebugMessenger();
-        pInstance->createSurface(pWindow.get());
         std::cout << "pInstance\n";
         
         pDevice = std::make_unique<Device>();
-        pDevice->pickPhysicalDevice(pInstance.get());
+        pDevice->pickPhysicalDevice(&instance);
         pDevice->createLogicalDevice();
         std::cout << "pDevice\n";
         
@@ -114,7 +110,7 @@ private:
         std::cout << "GraphicsQueue\n";
         
         pSwapchain = std::make_unique<SwapChain>(pDevice.get());
-        pSwapchain->createSwapChain(pDevice.get(),pDevice->getPhysicalDevice(),pWindow.get(),pInstance.get());
+        pSwapchain->createSwapChain(pDevice.get(),pDevice->getPhysicalDevice(),&window,&instance);
         pSwapchain->createImageViews(pDevice.get());
         std::cout << "pSwapchain\n";
         
@@ -168,7 +164,7 @@ private:
     }
 
     void mainLoop() {
-        while (!glfwWindowShouldClose(pWindow->getWindow())) {
+        while (!glfwWindowShouldClose(window.getWindow())) {
             glfwPollEvents();
             drawFrame();
         }
@@ -206,9 +202,9 @@ private:
 
     void recreateSwapChain() {      // for window resized
         int width = 0, height = 0;
-        glfwGetFramebufferSize(pWindow->getWindow(), &width, &height);
+        glfwGetFramebufferSize(window.getWindow(), &width, &height);
         while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(pWindow->getWindow(), &width, &height);
+            glfwGetFramebufferSize(window.getWindow(), &width, &height);
             glfwWaitEvents();
         }
 
@@ -216,7 +212,7 @@ private:
 
         cleanupSwapChain();
 
-        pSwapchain->createSwapChain(pDevice.get(),pDevice->getPhysicalDevice(),pWindow.get(),pInstance.get());
+        pSwapchain->createSwapChain(pDevice.get(),pDevice->getPhysicalDevice(),&window,&instance);
         pSwapchain->createImageViews(pDevice.get());
         // createColorResources();
         pOther->createColorResources();

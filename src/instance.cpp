@@ -8,7 +8,8 @@
 
 Instance::Instance( const std::string& appName , 
     const std::string& engineName,
-    bool enableValidationLayers ){
+    bool enableValidationLayers,
+    Window& window ){
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             throw std::runtime_error("validation layers requested, but not available!");
         }
@@ -45,6 +46,12 @@ Instance::Instance( const std::string& appName ,
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
             throw std::runtime_error("failed to create instance!");
         }
+
+        // RAII：构造函数中完成 debug messenger 与 window surface 的创建
+        setupDebugMessenger();
+        // if (window != nullptr) {
+            createSurface(window);
+        // }
     }
     Instance::~Instance(){
         // 先销毁从 instance 创建的 surface 与 debug messenger，再销毁 instance
@@ -121,8 +128,8 @@ Instance::Instance( const std::string& appName ,
     }
 
     // void Instance::createSurface(std::unique_ptr<Window> window){   // 错误的参数类型
-    void Instance::createSurface(Window* window){   
-        if (glfwCreateWindowSurface(instance, window->getWindow(), nullptr, &surface) != VK_SUCCESS) {
+    void Instance::createSurface(Window& window){   
+        if (glfwCreateWindowSurface(instance, window.getWindow(), nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create window surface!");
         }
     }

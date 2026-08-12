@@ -15,7 +15,8 @@ public:
     //         bool enableValidationLayers = true  );
     Instance( const std::string& appName, 
             const std::string& engineName ,
-            bool enableValidationLayers );
+            bool enableValidationLayers ,
+            Window& window);
     ~Instance();  
     // 禁用拷贝，防止双重释放
     Instance(const Instance&) = delete;
@@ -39,7 +40,7 @@ public:
     void populateDebugMessengerCreateInfo( VkDebugUtilsMessengerCreateInfoEXT& createInfo );
 
     void setupDebugMessenger();
-    void createSurface(Window* window);
+    void createSurface(Window& window);
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 private:

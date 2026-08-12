@@ -4,6 +4,8 @@ Window::Window(int Width, int Height, std::string &windowName){
     setWindowHeight(Height);
     setWindowWidth(Width);
     setWindowName(windowName);
+    // RAII：构造函数中完成资源（GLFW 窗口）的创建
+    initWindow();
 }
 
 Window::~Window(){
