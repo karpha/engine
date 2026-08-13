@@ -25,7 +25,7 @@ struct QueueFamilyIndices {
 class Device{
 public:
 
-    Device() = default;
+    Device(Instance& inst);
     ~Device(){
         if (device != VK_NULL_HANDLE) {
             vkDestroyDevice(device, nullptr);
@@ -55,7 +55,7 @@ public:
     void setMsaaSamples(VkSampleCountFlagBits samples){
         msaaSamples = samples;
     }
-    void pickPhysicalDevice(Instance* instance);
+    void pickPhysicalDevice(Instance& instance);
     void createLogicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -64,7 +64,7 @@ public:
     VkSampleCountFlagBits getMaxUsableSampleCount();
 
 private:
-    Instance* instance = nullptr;
+    Instance* instance;
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };

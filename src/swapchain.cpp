@@ -97,24 +97,24 @@ void SwapChain::createSwapChain(Device* pDevice,
 }
 
 VkImageView SwapChain::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, Device* pDevice) {
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = aspectFlags;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = mipLevels;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = format;
+    viewInfo.subresourceRange.aspectMask = aspectFlags;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = mipLevels;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
 
-        VkImageView imageView;
-        if (vkCreateImageView(pDevice->getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create image view!");
-        }
-
-        return imageView;
+    VkImageView imageView;
+    if (vkCreateImageView(pDevice->getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image view!");
     }
+
+    return imageView;
+}
 
 void SwapChain::createImageViews(Device* pDevice){
     swapChainImageViews.resize(swapChainImages.size());
@@ -126,4 +126,10 @@ void SwapChain::createImageViews(Device* pDevice){
                 VK_IMAGE_ASPECT_COLOR_BIT, 
                 1, pDevice);  // 这里使用pDevice.get()之后，createImageView()的对应参数就要改为Device* device，createImageViews()的参数不变，仍是unique_ptr
         }
+}
+
+SwapChain::SwapChain(Device* pDevice, Window* window, Instance* instance){
+    device = pDevice;   // 关键：保存依赖指针，否则 device 是未初始化的野指针
+    createSwapChain(pDevice, pDevice->getPhysicalDevice(), window, instance);
+    createImageViews(pDevice);
 }

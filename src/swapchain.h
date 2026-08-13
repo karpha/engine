@@ -7,9 +7,7 @@
 
 class SwapChain{
 public:
-    SwapChain(Device* pDevice){
-        device = pDevice;
-    };
+    SwapChain(Device* pDevice, Window* window, Instance* instance);
     ~SwapChain(){
         // 先销毁 framebuffers 与 image views，再销毁 swapchain（在 Device 销毁之前，设备仍有效）
         for (auto framebuffer : swapChainFramebuffers) {
