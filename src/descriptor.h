@@ -10,14 +10,11 @@ class Buffer;
 
 class Descriptor{
 public:
-    Descriptor(Device* dev, Texture* txture){
-        device = dev;
-        texture = txture;
-    }
+    Descriptor(Device* dev);
     void setBuffer(Buffer* buf){
         buffer = buf;
     }
-    ~Descriptor(){
+    ~Descriptor(){      // 析构函数需要device
         if (descriptorSetLayout != VK_NULL_HANDLE)
             vkDestroyDescriptorSetLayout(device->getDevice(), descriptorSetLayout, nullptr);
         if (descriptorPool != VK_NULL_HANDLE)

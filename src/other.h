@@ -11,13 +11,7 @@ class Descriptor;
 
 class Other{
 public:
-    Other(Device* dev, SwapChain* swchain, Texture* tex, RenderPass* rp, Descriptor* descr){
-        device = dev;
-        pSwapchain = swchain;
-        pTexture = tex;
-        pRenderpass = rp;
-        pDescriptor = descr;
-    }
+    Other(Device* dev, SwapChain* swchain, Texture* tex, RenderPass* rp, Descriptor* descr);
     ~Other();
 
     Other(const Other&) = delete;

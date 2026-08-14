@@ -2,6 +2,12 @@
 #include <stdexcept>
 #include "descriptor.h"
 
+Command::Command(Device* dev, Descriptor* descrpt){
+    device = dev;
+    descriptor = descrpt;
+    createCommandPool();
+}
+
 VkCommandBuffer Command::beginSingleTimeCommands() {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

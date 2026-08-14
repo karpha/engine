@@ -11,6 +11,7 @@ class LoadModel{
 public:
     LoadModel(Buffer* buff ){
         pBuffer = buff;
+        loadModel();
     }
 
     LoadModel(const LoadModel&) = delete;

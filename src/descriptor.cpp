@@ -3,6 +3,12 @@
 
 #include <array>
 #include <stdexcept>
+
+Descriptor::Descriptor(Device* dev){
+    device = dev;
+    createDescriptorSetLayout();
+}
+
 void Descriptor::createDescriptorSetLayout(){
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;

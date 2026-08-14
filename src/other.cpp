@@ -7,6 +7,17 @@
 #include "renderpass.h"
 #include "descriptor.h" 
 
+
+Other::Other(Device* dev, SwapChain* swchain, Texture* tex, RenderPass* rp, Descriptor* descr){
+    device = dev;
+    pSwapchain = swchain;
+    pTexture = tex;
+    pRenderpass = rp;
+    pDescriptor = descr;
+    createColorResources();
+    createDepthResources();
+}
+
 // 在实现文件中定义析构函数，因为头文件里 Device/Descriptor 只是前向声明（不完整类型），
 // 无法在头文件内调用其成员函数。这里类型完整，可以安全销毁同步对象。
 Other::~Other() {

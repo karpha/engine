@@ -10,6 +10,7 @@ Pipeline::Pipeline(Device* dev, Descriptor* dscrp, RenderPass* rp) {
     device = dev;
     descriptor = dscrp;
     renderpass = rp;
+    createGraphicsPipeline();
 }
 
 Pipeline::~Pipeline() {

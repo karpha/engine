@@ -76,8 +76,14 @@ namespace std {
 
 class Buffer{
 public:
-    Buffer(Device* dev){
+    Buffer(Device* dev, Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd, Descriptor* desc){
         device = dev;
+        texture = txture;
+        swapchain = sw;
+        renderpass = renderp;
+        command = cmd;
+        descrpt = desc;
+        createFramebuffers();
     }
     ~Buffer(){
         // 先销毁 uniform buffers 及其内存
@@ -107,13 +113,13 @@ public:
             vertexBufferMemory = VK_NULL_HANDLE;
         }
     }
-    void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd, Descriptor* desc){
-        texture = txture;
-        swapchain = sw;
-        renderpass = renderp;
-        command = cmd;
-        descrpt = desc;
-    }
+    // void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd, Descriptor* desc){
+    //     texture = txture;
+    //     swapchain = sw;
+    //     renderpass = renderp;
+    //     command = cmd;
+    //     descrpt = desc;
+    // }
 
     std::vector<VkBuffer>& getUniformBuffers(){
         return uniformBuffers;

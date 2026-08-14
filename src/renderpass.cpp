@@ -2,6 +2,12 @@
 #include <stdexcept>
 #include <array>
 
+RenderPass::RenderPass( Device* dev, SwapChain* sw){
+    device = dev;
+    swapchain = sw;
+    createRenderPass();
+}
+
 VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, Device* device) {
         for (VkFormat format : candidates) {
             VkFormatProperties props;

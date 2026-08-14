@@ -77,17 +77,25 @@ private:
     Instance instance{"Hello Triangle", "No Engine", true, window};
     Device device{instance};
     SwapChain swapchain{&device, &window,&instance};
+    RenderPass renderpass{&device, &swapchain};
+    Descriptor descriptor{&device};
+    Pipeline pipeline{&device, &descriptor, &renderpass};
 
-    std::unique_ptr<RenderPass> pRenderPass;
+    Command command{&device, &descriptor};
 
-    std::unique_ptr<Buffer> pBuffer;
-    std::unique_ptr<Command> pCommand;
-    std::unique_ptr<Descriptor> pDescriptor;
+    Texture texture{&device, &command};
+    Other other{&device, &swapchain, &texture, &renderpass, &descriptor};
+    Buffer buffer{&device, &texture, &swapchain, &renderpass, &command, &descriptor};
+    // std::unique_ptr<RenderPass> pRenderPass;
+    LoadModel loadmodel{&buffer};
+    // std::unique_ptr<Buffer> pBuffer;
+    // std::unique_ptr<Command> pCommand;
+    // std::unique_ptr<Descriptor> pDescriptor;
     std::unique_ptr<Texture> pTexture;
 
     std::unique_ptr<LoadModel> pLoadModel;
-    std::unique_ptr<Pipeline> pPipeLine;
-    std::unique_ptr<Other> pOther;
+    // std::unique_ptr<Pipeline> pPipeLine;
+    // std::unique_ptr<Other> pOther;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -102,16 +110,16 @@ private:
         std::cout << "GraphicsQueue\n";
         std::cout << "pswapchain1\n";
         
-        pRenderPass = std::make_unique<RenderPass>(&device, &swapchain);
-        pRenderPass->createRenderPass();
+        // pRenderPass = std::make_unique<RenderPass>(&device, &swapchain);
+        // pRenderPass->createRenderPass();
         std::cout << "pRenderpass\n";
         
         pBuffer = std::make_unique<Buffer>(&device);
-        pCommand = std::make_unique<Command>(&device);
+        // pCommand = std::make_unique<Command>(&device);
         pTexture = std::make_unique<Texture>(&device, pBuffer.get(), pCommand.get());
-        pDescriptor = std::make_unique<Descriptor>(&device, pTexture.get());
+        // pDescriptor = std::make_unique<Descriptor>(&device, pTexture.get());
         pDescriptor->setBuffer(pBuffer.get());
-        pBuffer->bufferInit(pTexture.get(), &swapchain, pRenderPass.get(), pCommand.get(), pDescriptor.get());
+        pBuffer->bufferInit(pTexture.get(), &swapchain, &renderpass, pCommand.get(), pDescriptor.get());
         std::cout << "pDescriptor\n";
 
         pLoadModel = std::make_unique<LoadModel>(pBuffer.get());
@@ -119,30 +127,35 @@ private:
         pCommand->setDescriptor(pDescriptor.get());
         pCommand->setGraphicsQueue(device.getGraphicsQueue());
         
-        pDescriptor->createDescriptorSetLayout();
+        // pDescriptor->createDescriptorSetLayout();
 
-        pPipeLine = std::make_unique<Pipeline>(&device, pDescriptor.get(), pRenderPass.get());
-        pPipeLine->createGraphicsPipeline();
+        // pPipeLine = std::make_unique<Pipeline>(&device, pDescriptor.get(), &renderpass);
+        // pPipeLine->createGraphicsPipeline();
         
-        pCommand->createCommandPool();
+        // pCommand->createCommandPool();
 
-        pOther = std::make_unique<Other>(&device, &swapchain, pTexture.get(), pRenderPass.get(), pDescriptor.get());
-        pOther->createColorResources();
-        pOther->createDepthResources();
+        // pOther = std::make_unique<Other>(&device, &swapchain, pTexture.get(), &renderpass, pDescriptor.get());
+        // pOther->createColorResources();
+        // pOther->createDepthResources();
         
-        pBuffer->createFramebuffers();
+        // pBuffer->createFramebuffers();
+        texture.init(&buffer);
+        texture.createTextureImage();
+        // texture.
+        // pTexture->createTextureImage();
+        texture.createTextureImageView();
+        texture.createTextureSampler();
+
+        // pLoadModel->loadModel();
         
-        pTexture->createTextureImage();
-        pTexture->createTextureImageView();
-        pTexture->createTextureSampler();
-        pLoadModel->loadModel();
-        
+        // 添加buffer init
         pBuffer->createVertexBuffer();
         pBuffer->createIndexBuffer();
         pBuffer->createUniformBuffers();
-        
-        pDescriptor->createDescriptorPool();
-        pDescriptor->createDescriptorSets();
+        // 
+        // 这里使用descriptor init，传入texture， buffer
+        descriptor.createDescriptorPool();
+        descriptor.createDescriptorSets();
         
         pCommand->createCommandBuffers();
         pOther->createSyncObjects();
@@ -222,7 +235,7 @@ private:
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = pRenderPass->getRenderpass();
+        renderPassInfo.renderPass = renderpass.getRenderpass();
         renderPassInfo.framebuffer = swapchain.getSwapchainFrameBuffers()[imageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapchain.getSwapchainExtent();

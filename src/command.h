@@ -8,9 +8,7 @@ class Descriptor;
 
 class Command{
 public:
-    Command(Device* dev){
-        device = dev;
-    }
+    Command(Device* dev, Descriptor* descrpt);
     ~Command(){
         if (commandPool != VK_NULL_HANDLE) {
             vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);

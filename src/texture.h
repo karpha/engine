@@ -13,11 +13,14 @@ class Buffer;
 
 class Texture{
 public:
-    Texture(Device* dev, Buffer* buff, Command* cmd){
+    Texture(Device* dev, Command* cmd){
         device = dev;
-        buffer = buff;
+        // buffer = buff;
         command = cmd;
     }
+    void init(Buffer* buff){
+        buffer = buff;
+    }    // init 中初始化buffer
     ~Texture(){
         if (textureImageView != VK_NULL_HANDLE) {
             vkDestroyImageView(device->getDevice(), textureImageView, nullptr);

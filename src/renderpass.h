@@ -6,10 +6,7 @@
 
 class RenderPass{
 public:
-    RenderPass( Device* dev, SwapChain* sw){
-        device = dev;
-        swapchain = sw;
-    }
+    RenderPass( Device* dev, SwapChain* sw);
     ~RenderPass(){
         if (renderpass != VK_NULL_HANDLE) {
             vkDestroyRenderPass(device->getDevice(),renderpass,nullptr);
