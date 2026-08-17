@@ -36,6 +36,10 @@ public:
     const int getMAX_FRAMES_IN_FLIGHT() const{
         return MAX_FRAMES_IN_FLIGHT;
     }
+    void init(Buffer* buff, Texture* tex){
+        buffer = buff;
+        texture = tex;
+    }
 
     void createDescriptorSetLayout();       // 1
     void createDescriptorPool();     // descriptor  2

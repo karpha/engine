@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdexcept>
 #include <unordered_map>
+#include <iostream>
 
 class Buffer;
 
@@ -12,6 +13,7 @@ public:
     LoadModel(Buffer* buff ){
         pBuffer = buff;
         loadModel();
+        std::cout << "loadmodel: constructor\n";
     }
 
     LoadModel(const LoadModel&) = delete;

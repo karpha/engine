@@ -14,6 +14,7 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
+#include <iostream>
 
 class Texture;
 
@@ -84,6 +85,7 @@ public:
         command = cmd;
         descrpt = desc;
         createFramebuffers();
+        std::cout << "buffer: constructor\n";
     }
     ~Buffer(){
         // 先销毁 uniform buffers 及其内存
@@ -147,7 +149,6 @@ public:
     void createVertexBuffer();
     void createIndexBuffer();
     void createUniformBuffers();
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void createFramebuffers();
 
     void createBuffer(VkDeviceSize size, 

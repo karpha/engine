@@ -57,6 +57,7 @@ public:
     }
     void pickPhysicalDevice(Instance& instance);
     void createLogicalDevice();
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);

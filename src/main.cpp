@@ -65,6 +65,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 class HelloTriangleApplication {
     public:
     void run() {
+        std::cout << "run : \n";
         initVulkan();
         mainLoop();
         // cleanup();
@@ -72,11 +73,13 @@ class HelloTriangleApplication {
 
 private:
     // RAII：直接成员，按声明顺序构造（windowName -> window -> instance）
-    std::string windowName = "renderer";
+    std::string windowName = "renderer";        // 使用构造函数声明类对象时，会首先直接调用构造函数，
+    // 但是如果有一些创建资源的函数需要有前后顺序要求，就需要注意函数调用顺序
     Window window{800, 600, windowName};
     Instance instance{"Hello Triangle", "No Engine", true, window};
     Device device{instance};
     SwapChain swapchain{&device, &window,&instance};
+    
     RenderPass renderpass{&device, &swapchain};
     Descriptor descriptor{&device};
     Pipeline pipeline{&device, &descriptor, &renderpass};
@@ -91,9 +94,9 @@ private:
     // std::unique_ptr<Buffer> pBuffer;
     // std::unique_ptr<Command> pCommand;
     // std::unique_ptr<Descriptor> pDescriptor;
-    std::unique_ptr<Texture> pTexture;
+    // std::unique_ptr<Texture> pTexture;
 
-    std::unique_ptr<LoadModel> pLoadModel;
+    // std::unique_ptr<LoadModel> pLoadModel;
     // std::unique_ptr<Pipeline> pPipeLine;
     // std::unique_ptr<Other> pOther;
 
@@ -114,18 +117,18 @@ private:
         // pRenderPass->createRenderPass();
         std::cout << "pRenderpass\n";
         
-        pBuffer = std::make_unique<Buffer>(&device);
+        // pBuffer = std::make_unique<Buffer>(&device);
         // pCommand = std::make_unique<Command>(&device);
-        pTexture = std::make_unique<Texture>(&device, pBuffer.get(), pCommand.get());
+        // pTexture = std::make_unique<Texture>(&device, pBuffer.get(), pCommand.get());
         // pDescriptor = std::make_unique<Descriptor>(&device, pTexture.get());
-        pDescriptor->setBuffer(pBuffer.get());
-        pBuffer->bufferInit(pTexture.get(), &swapchain, &renderpass, pCommand.get(), pDescriptor.get());
+        // pDescriptor->setBuffer(pBuffer.get());
+        // pBuffer->bufferInit(pTexture.get(), &swapchain, &renderpass, pCommand.get(), pDescriptor.get());
         std::cout << "pDescriptor\n";
 
-        pLoadModel = std::make_unique<LoadModel>(pBuffer.get());
+        // pLoadModel = std::make_unique<LoadModel>(pBuffer.get());
         
-        pCommand->setDescriptor(pDescriptor.get());
-        pCommand->setGraphicsQueue(device.getGraphicsQueue());
+        // pCommand->setDescriptor(pDescriptor.get());
+        // pCommand->setGraphicsQueue(device.getGraphicsQueue());
         
         // pDescriptor->createDescriptorSetLayout();
 
@@ -139,29 +142,38 @@ private:
         // pOther->createDepthResources();
         
         // pBuffer->createFramebuffers();
+        command.setGraphicsQueue(device.getGraphicsQueue());   // 必须在使用 command 执行提交前设置队列
         texture.init(&buffer);
+        std::cout << "before createTextureImage\n";
         texture.createTextureImage();
+        std::cout << "after createTextureImage\n";
         // texture.
         // pTexture->createTextureImage();
         texture.createTextureImageView();
+        std::cout << "after createTextureImageView\n";
         texture.createTextureSampler();
+        std::cout << "after createTextureSampler\n";
 
         // pLoadModel->loadModel();
         
         // 添加buffer init
-        pBuffer->createVertexBuffer();
-        pBuffer->createIndexBuffer();
-        pBuffer->createUniformBuffers();
+        buffer.createVertexBuffer();
+        // pBuffer->createVertexBuffer();
+        buffer.createIndexBuffer();
+        buffer.createUniformBuffers();
         // 
         // 这里使用descriptor init，传入texture， buffer
+        descriptor.init(&buffer, &texture);
         descriptor.createDescriptorPool();
         descriptor.createDescriptorSets();
         
-        pCommand->createCommandBuffers();
-        pOther->createSyncObjects();
-        imageAvailableSemaphores = pOther->getImageAvailableSemaphores();
-        renderFinishedSemaphores = pOther->getRenderFinishedSemaphores();
-        inFlightFences = pOther->getInFlightFences();
+        // pCommand->createCommandBuffers();
+        command.createCommandBuffers();
+        // pOther->createSyncObjects();
+        other.createSyncObjects();
+        imageAvailableSemaphores = other.getImageAvailableSemaphores();
+        renderFinishedSemaphores = other.getRenderFinishedSemaphores();
+        inFlightFences = other.getInFlightFences();
     }
 
     void mainLoop() {
@@ -174,19 +186,19 @@ private:
     }
 
     void cleanupSwapChain() {       // for window resized
-        vkDestroyImageView(device.getDevice(), pTexture->getDepthImageView(), nullptr);
-        vkDestroyImage(device.getDevice(), pTexture->getDepthImage(), nullptr);
-        vkFreeMemory(device.getDevice(), pTexture->getDepthImageMemory(), nullptr);
-        pTexture->setDepthImageView(VK_NULL_HANDLE);
-        pTexture->setDepthImage(VK_NULL_HANDLE);
-        pTexture->setDepthImageMemory(VK_NULL_HANDLE);
+        vkDestroyImageView(device.getDevice(), texture.getDepthImageView(), nullptr);
+        vkDestroyImage(device.getDevice(), texture.getDepthImage(), nullptr);
+        vkFreeMemory(device.getDevice(), texture.getDepthImageMemory(), nullptr);
+        texture.setDepthImageView(VK_NULL_HANDLE);
+        texture.setDepthImage(VK_NULL_HANDLE);
+        texture.setDepthImageMemory(VK_NULL_HANDLE);
 
-        vkDestroyImageView(device.getDevice(), pTexture->getColorImageView(), nullptr);
-        vkDestroyImage(device.getDevice(), pTexture->getColorImage(), nullptr);
-        vkFreeMemory(device.getDevice(), pTexture->getColorImageMemory(), nullptr);
-        pTexture->setColorImageView(VK_NULL_HANDLE);
-        pTexture->setColorImage(VK_NULL_HANDLE);
-        pTexture->setColorImageMemory(VK_NULL_HANDLE);
+        vkDestroyImageView(device.getDevice(), texture.getColorImageView(), nullptr);
+        vkDestroyImage(device.getDevice(), texture.getColorImage(), nullptr);
+        vkFreeMemory(device.getDevice(), texture.getColorImageMemory(), nullptr);
+        texture.setColorImageView(VK_NULL_HANDLE);
+        texture.setColorImage(VK_NULL_HANDLE);
+        texture.setColorImageMemory(VK_NULL_HANDLE);
 
         for (auto framebuffer : swapchain.getSwapchainFrameBuffers()) {
             vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
@@ -215,10 +227,9 @@ private:
         swapchain.createSwapChain(&device,device.getPhysicalDevice(),&window,&instance);
         swapchain.createImageViews(&device);
         // createColorResources();
-        pOther->createColorResources();
-        // createDepthResources();
-        pOther->createDepthResources();
-        pBuffer->createFramebuffers();
+        other.createColorResources();
+        other.createDepthResources();
+        buffer.createFramebuffers();
     }
 
     bool hasStencilComponent(VkFormat format) {
@@ -249,7 +260,7 @@ private:
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pPipeLine->getGraphicsPipeline());
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
 
             VkViewport viewport{};
             viewport.x = 0.0f;
@@ -265,15 +276,14 @@ private:
             scissor.extent = swapchain.getSwapchainExtent();
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            VkBuffer vertexBuffers[] = {pBuffer->getVertexBuffer()};
+            VkBuffer vertexBuffers[] = {buffer.getVertexBuffer()};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-            vkCmdBindIndexBuffer(commandBuffer, pBuffer->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, buffer.getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pPipeLine->getPipelineLayout(), 0, 1, &(pDescriptor->getDescriptorSets())[currentFrame], 0, nullptr);
-
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(pBuffer->getIndices().size()), 1, 0, 0, 0);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipelineLayout(), 0, 1, &(descriptor.getDescriptorSets())[currentFrame], 0, nullptr);
+            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(buffer.getIndices().size()), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -294,7 +304,7 @@ private:
         ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getSwapchainExtent().width / (float) swapchain.getSwapchainExtent().height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
-        memcpy(pBuffer->getUniformBuffersMapped()[currentImage], &ubo, sizeof(ubo));
+        memcpy(buffer.getUniformBuffersMapped()[currentImage], &ubo, sizeof(ubo));
     }
 
     void drawFrame() {
@@ -313,8 +323,8 @@ private:
 
         vkResetFences(device.getDevice(), 1, &inFlightFences[currentFrame]);
 
-        vkResetCommandBuffer(pCommand->getCommandBuffers()[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-        recordCommandBuffer(pCommand->getCommandBuffers()[currentFrame], imageIndex);
+        vkResetCommandBuffer(command.getCommandBuffers()[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+        recordCommandBuffer(command.getCommandBuffers()[currentFrame], imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -326,7 +336,7 @@ private:
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &(pCommand->getCommandBuffers())[currentFrame];
+        submitInfo.pCommandBuffers = &(command.getCommandBuffers())[currentFrame];
 
         VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
@@ -362,8 +372,9 @@ private:
 };
 
 int main() {
-    HelloTriangleApplication app;
     try {
+        std::cout << "main: try: \n";
+        HelloTriangleApplication app;   // 对象在 try 内构造，构造阶段的异常可被捕获并打印
         app.run();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;

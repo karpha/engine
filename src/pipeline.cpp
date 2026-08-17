@@ -11,6 +11,7 @@ Pipeline::Pipeline(Device* dev, Descriptor* dscrp, RenderPass* rp) {
     descriptor = dscrp;
     renderpass = rp;
     createGraphicsPipeline();
+    std:: cout << "pipeline : constructor\n";
 }
 
 Pipeline::~Pipeline() {

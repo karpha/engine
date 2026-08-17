@@ -5,6 +5,8 @@
 #include <cstring>
 #include <memory>
 
+#include <iostream>
+
 
 Instance::Instance( const std::string& appName , 
     const std::string& engineName,
@@ -52,6 +54,7 @@ Instance::Instance( const std::string& appName ,
         // if (window != nullptr) {
             createSurface(window);
         // }
+        std::cout << "instance: constructor\n";
     }
     Instance::~Instance(){
         // 先销毁从 instance 创建的 surface 与 debug messenger，再销毁 instance

@@ -16,6 +16,7 @@ Other::Other(Device* dev, SwapChain* swchain, Texture* tex, RenderPass* rp, Desc
     pDescriptor = descr;
     createColorResources();
     createDepthResources();
+    std::cout << "other: constructor\n";
 }
 
 // 在实现文件中定义析构函数，因为头文件里 Device/Descriptor 只是前向声明（不完整类型），

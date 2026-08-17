@@ -8,6 +8,7 @@
 // #define STB_IMAGE_IMPLEMENTATION
 // #include <stb_image.h>
 #include "thirdParty.h"
+#include <iostream>
 
 class Buffer;
 
@@ -17,6 +18,7 @@ public:
         device = dev;
         // buffer = buff;
         command = cmd;
+        std::cout << "texture: constructor\n";
     }
     void init(Buffer* buff){
         buffer = buff;

@@ -132,4 +132,5 @@ SwapChain::SwapChain(Device* pDevice, Window* window, Instance* instance){
     device = pDevice;   // 关键：保存依赖指针，否则 device 是未初始化的野指针
     createSwapChain(pDevice, pDevice->getPhysicalDevice(), window, instance);
     createImageViews(pDevice);
+    std::cout << "swapchain : constructor \n";
 }
