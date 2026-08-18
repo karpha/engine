@@ -3,12 +3,12 @@
 
 #include <array>
 #include <stdexcept>
-#include <iostream>
+// #include <iostream>
 
 Descriptor::Descriptor(Device* dev){
     device = dev;
     createDescriptorSetLayout();
-    std::cout<< "descriptor: contructor\n";
+    std::cout<< "\tdescriptor: contructor\n";
 }
 
 void Descriptor::createDescriptorSetLayout(){

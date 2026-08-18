@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "device.h"
 #include "texture.h"
+#include <iostream>
 
 class Buffer;
 
@@ -19,6 +20,7 @@ public:
             vkDestroyDescriptorSetLayout(device->getDevice(), descriptorSetLayout, nullptr);
         if (descriptorPool != VK_NULL_HANDLE)
             vkDestroyDescriptorPool(device->getDevice(), descriptorPool, nullptr);
+        std::cout << "\tdescriptor: destructor\n";
     }
 
     Descriptor(const Descriptor&) = delete;

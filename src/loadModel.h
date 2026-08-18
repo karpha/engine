@@ -13,7 +13,10 @@ public:
     LoadModel(Buffer* buff ){
         pBuffer = buff;
         loadModel();
-        std::cout << "loadmodel: constructor\n";
+        std::cout << "\tloadmodel: constructor\n";
+    }
+    ~LoadModel(){
+        std::cout << "\tloadmodel: destructor\n";
     }
 
     LoadModel(const LoadModel&) = delete;

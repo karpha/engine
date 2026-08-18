@@ -108,68 +108,33 @@ private:
     bool framebufferResized = false;
 
     void initVulkan() {
+
+        std::cout << "initVulkan\n";
         std::cout << "pInstance\n";
-        std::cout << "pDevice\n";
-        std::cout << "GraphicsQueue\n";
-        std::cout << "pswapchain1\n";
-        
-        // pRenderPass = std::make_unique<RenderPass>(&device, &swapchain);
-        // pRenderPass->createRenderPass();
         std::cout << "pRenderpass\n";
         
-        // pBuffer = std::make_unique<Buffer>(&device);
-        // pCommand = std::make_unique<Command>(&device);
-        // pTexture = std::make_unique<Texture>(&device, pBuffer.get(), pCommand.get());
-        // pDescriptor = std::make_unique<Descriptor>(&device, pTexture.get());
-        // pDescriptor->setBuffer(pBuffer.get());
-        // pBuffer->bufferInit(pTexture.get(), &swapchain, &renderpass, pCommand.get(), pDescriptor.get());
         std::cout << "pDescriptor\n";
-
-        // pLoadModel = std::make_unique<LoadModel>(pBuffer.get());
         
-        // pCommand->setDescriptor(pDescriptor.get());
-        // pCommand->setGraphicsQueue(device.getGraphicsQueue());
-        
-        // pDescriptor->createDescriptorSetLayout();
-
-        // pPipeLine = std::make_unique<Pipeline>(&device, pDescriptor.get(), &renderpass);
-        // pPipeLine->createGraphicsPipeline();
-        
-        // pCommand->createCommandPool();
-
-        // pOther = std::make_unique<Other>(&device, &swapchain, pTexture.get(), &renderpass, pDescriptor.get());
-        // pOther->createColorResources();
-        // pOther->createDepthResources();
-        
-        // pBuffer->createFramebuffers();
         command.setGraphicsQueue(device.getGraphicsQueue());   // 必须在使用 command 执行提交前设置队列
         texture.init(&buffer);
         std::cout << "before createTextureImage\n";
         texture.createTextureImage();
         std::cout << "after createTextureImage\n";
-        // texture.
-        // pTexture->createTextureImage();
         texture.createTextureImageView();
         std::cout << "after createTextureImageView\n";
         texture.createTextureSampler();
         std::cout << "after createTextureSampler\n";
 
-        // pLoadModel->loadModel();
-        
         // 添加buffer init
         buffer.createVertexBuffer();
-        // pBuffer->createVertexBuffer();
         buffer.createIndexBuffer();
         buffer.createUniformBuffers();
-        // 
         // 这里使用descriptor init，传入texture， buffer
         descriptor.init(&buffer, &texture);
         descriptor.createDescriptorPool();
         descriptor.createDescriptorSets();
         
-        // pCommand->createCommandBuffers();
         command.createCommandBuffers();
-        // pOther->createSyncObjects();
         other.createSyncObjects();
         imageAvailableSemaphores = other.getImageAvailableSemaphores();
         renderFinishedSemaphores = other.getRenderFinishedSemaphores();

@@ -11,7 +11,7 @@ Pipeline::Pipeline(Device* dev, Descriptor* dscrp, RenderPass* rp) {
     descriptor = dscrp;
     renderpass = rp;
     createGraphicsPipeline();
-    std:: cout << "pipeline : constructor\n";
+    std:: cout << "\tpipeline : constructor\n";
 }
 
 Pipeline::~Pipeline() {
@@ -19,6 +19,7 @@ Pipeline::~Pipeline() {
         vkDestroyPipeline(device->getDevice(), graphicsPipeline, nullptr);
     if (pipelineLayout != VK_NULL_HANDLE)
         vkDestroyPipelineLayout(device->getDevice(), pipelineLayout, nullptr);
+    std::cout << "\tpipeline: destructor\n";
 }
 
 static std::vector<char> readFile(const std::string& filename) {

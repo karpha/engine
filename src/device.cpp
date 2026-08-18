@@ -7,7 +7,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include "instance.h"
-#include <iostream>
+// #include <iostream>
 
 // 有device.cpp 选择物理设备，创建逻辑设备，队列，检查vulkan扩展、设备功能、交换链是否支持等
 QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
@@ -200,5 +200,5 @@ uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags prope
 Device::Device(Instance& inst){
     pickPhysicalDevice(inst);
     createLogicalDevice();
-    std::cout << "device: constructor\n";
+    std::cout << "\tdevice: constructor\n";
 }

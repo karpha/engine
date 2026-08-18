@@ -1,13 +1,13 @@
 #include "command.h"
 #include <stdexcept>
 #include "descriptor.h"
-#include <iostream>
+// #include <iostream>
 
 Command::Command(Device* dev, Descriptor* descrpt){
     device = dev;
     descriptor = descrpt;
     createCommandPool();
-    std::cout << "command: contructor\n";
+    std::cout << "\tcommand: contructor\n";
 }
 
 VkCommandBuffer Command::beginSingleTimeCommands() {

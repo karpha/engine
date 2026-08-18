@@ -5,7 +5,7 @@
 #include <cstring>
 #include <memory>
 
-#include <iostream>
+// #include <iostream>
 
 
 Instance::Instance( const std::string& appName , 
@@ -54,7 +54,7 @@ Instance::Instance( const std::string& appName ,
         // if (window != nullptr) {
             createSurface(window);
         // }
-        std::cout << "instance: constructor\n";
+        std::cout << "\tinstance: constructor\n";
     }
     Instance::~Instance(){
         // 先销毁从 instance 创建的 surface 与 debug messenger，再销毁 instance
@@ -70,6 +70,7 @@ Instance::Instance( const std::string& appName ,
             vkDestroyInstance(instance, nullptr);
             instance = VK_NULL_HANDLE;
         }
+        std::cout << "\tinstance: destructor\n";
     }
 
     void Instance::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {

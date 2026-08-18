@@ -85,7 +85,7 @@ public:
         command = cmd;
         descrpt = desc;
         createFramebuffers();
-        std::cout << "buffer: constructor\n";
+        std::cout << " \tbuffer: constructor\n";
     }
     ~Buffer(){
         // 先销毁 uniform buffers 及其内存
@@ -114,14 +114,8 @@ public:
             vkFreeMemory(device->getDevice(), vertexBufferMemory, nullptr);
             vertexBufferMemory = VK_NULL_HANDLE;
         }
+        std::cout << "\tbuffer: destructor\n";
     }
-    // void bufferInit(Texture* txture, SwapChain* sw, RenderPass* renderp, Command* cmd, Descriptor* desc){
-    //     texture = txture;
-    //     swapchain = sw;
-    //     renderpass = renderp;
-    //     command = cmd;
-    //     descrpt = desc;
-    // }
 
     std::vector<VkBuffer>& getUniformBuffers(){
         return uniformBuffers;

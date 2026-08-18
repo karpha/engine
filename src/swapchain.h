@@ -22,6 +22,7 @@ public:
         swapChainImageViews.clear();
 
         destroySwapChain();
+        std::cout << "\tswapchain: destructor\n";
     };
 
     // 销毁交换链并置空，供 recreateSwapChain 和析构函数调用（幂等）

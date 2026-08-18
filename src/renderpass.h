@@ -13,6 +13,7 @@ public:
             vkDestroyRenderPass(device->getDevice(),renderpass,nullptr);
             renderpass = VK_NULL_HANDLE;
         }
+        std::cout << "\trenderpass: destructor\n";
     }
 
     RenderPass(const RenderPass&) = delete;

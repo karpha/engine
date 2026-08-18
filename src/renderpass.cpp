@@ -6,7 +6,7 @@ RenderPass::RenderPass( Device* dev, SwapChain* sw){
     device = dev;
     swapchain = sw;
     createRenderPass();
-    std::cout << "renderpass: constructor\n";
+    std::cout << "\trenderpass: constructor\n";
 }
 
 VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, Device* device) {

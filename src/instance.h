@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "window.h"
+#include <iostream>
 
 class Instance{
 public:

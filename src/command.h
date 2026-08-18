@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include "device.h"
+#include <iostream>
 
 class Descriptor;
 
@@ -14,6 +15,7 @@ public:
             vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);
             commandPool = VK_NULL_HANDLE;
         }
+        std::cout << "\tcommand: destructor\n";
     }
     void setDescriptor(Descriptor* des){
         descriptor = des;

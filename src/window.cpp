@@ -6,7 +6,7 @@ Window::Window(int Width, int Height, std::string &windowName){
     setWindowName(windowName);
     // RAII：构造函数中完成资源（GLFW 窗口）的创建
     initWindow();
-    std::cout << "window : constructor\n";
+    std::cout << "\twindow : constructor\n";
 }
 
 Window::~Window(){
@@ -14,6 +14,7 @@ Window::~Window(){
         glfwDestroyWindow(window);
     }
     glfwTerminate();
+    std::cout << "\twindow: destructor\n";
 }
 
 GLFWwindow* Window::getWindow(){

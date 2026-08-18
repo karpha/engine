@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "instance.h"
+#include <iostream>
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -30,6 +31,7 @@ public:
         if (device != VK_NULL_HANDLE) {
             vkDestroyDevice(device, nullptr);
         }
+        std::cout << "\tdevice : destructor\n";
     }
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;

@@ -18,7 +18,7 @@ public:
         device = dev;
         // buffer = buff;
         command = cmd;
-        std::cout << "texture: constructor\n";
+        std::cout << "\ttexture: constructor\n";
     }
     void init(Buffer* buff){
         buffer = buff;
@@ -68,6 +68,7 @@ public:
             vkFreeMemory(device->getDevice(), depthImageMemory, nullptr);
             depthImageMemory = VK_NULL_HANDLE;
         }
+        std::cout << "\ttexture: destructor\n";
     }
 
     Texture(const Texture&) = delete;
