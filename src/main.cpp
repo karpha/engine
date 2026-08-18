@@ -88,17 +88,9 @@ private:
 
     Texture texture{&device, &command};
     Other other{&device, &swapchain, &texture, &renderpass, &descriptor};
-    Buffer buffer{&device, &texture, &swapchain, &renderpass, &command, &descriptor};
-    // std::unique_ptr<RenderPass> pRenderPass;
+    Buffer buffer{&device, &texture, &swapchain, &renderpass, &command, &descriptor};   
+    // 使用构造函数创建对象时，需要传入的参数可以参考vk::raii命名空间【vk::raii::Buffer buffer{device, createInfo}】
     LoadModel loadmodel{&buffer};
-    // std::unique_ptr<Buffer> pBuffer;
-    // std::unique_ptr<Command> pCommand;
-    // std::unique_ptr<Descriptor> pDescriptor;
-    // std::unique_ptr<Texture> pTexture;
-
-    // std::unique_ptr<LoadModel> pLoadModel;
-    // std::unique_ptr<Pipeline> pPipeLine;
-    // std::unique_ptr<Other> pOther;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
