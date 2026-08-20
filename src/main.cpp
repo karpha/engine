@@ -75,6 +75,7 @@ private:
     // RAII：直接成员，按声明顺序构造（windowName -> window -> instance）
     std::string windowName = "renderer";        // 使用构造函数声明类对象时，会首先直接调用构造函数，
     // 但是如果有一些创建资源的函数需要有前后顺序要求，就需要注意函数调用顺序
+    // 使用构造函数与析构函数管理资源时，只能确保资源的分配与释放，但不能保证 “高效的分配与释放”
     Window window{800, 600, windowName};
     Instance instance{"Hello Triangle", "No Engine", true, window};
     Device device{instance};
