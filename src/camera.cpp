@@ -158,9 +158,9 @@ void ThirdPersonCamera::orbit(float horizontalAngle, float verticalAngle){
     offset.x = radius * cos(yawRad) * cos(pitchRad);
     offset.y = radius *  sin(pitchRad);
     offset.z = radius * sin(yawRad) * cos(pitchRad);
-    disiredPosition = targetPosition + offset;  // set disire position
+    desiredPosition = targetPosition + offset;  // set disire position
 
-    front = glm::normalize(targetPosition - disiredPosition);
+    front = glm::normalize(targetPosition - desiredPosition);
     right = glm::normalize(glm::cross(front, worldUp));
     up = glm::normalize(glm::cross(front, right));
 }

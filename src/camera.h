@@ -57,7 +57,7 @@ class Camera{
         return zoom;
     }
 
-    private:
+    protected:  // 需要在继承类中使用的变量,需要在基类中声明为protected
 // these form camera's local coordinate system in world space
     glm::vec3 position;     // camera's location in world space
     glm::vec3 front;        // camera's local front
@@ -66,6 +66,7 @@ class Camera{
     glm::vec3 worldUp;      // global up vector(typically Y-axis)
 
     float yaw, pitch;
+    private:
     // user interaction
     float movementSpeed;
     float mouseSensitivity;
