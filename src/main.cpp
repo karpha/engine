@@ -42,6 +42,7 @@
 #include "loadModel.h"
 #include "pipeline.h"
 #include "other.h"
+#include "camera.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -67,7 +68,10 @@ class HelloTriangleApplication {
     void run() {
         std::cout << "run : \n";
         initVulkan();
-        mainLoop();
+        // 使用自定义相机
+        camera.setupInputCallbacks(window.getWindow(), camera);     // callback回调函数只调用一次,不应该放在循环中
+
+        mainLoop();     // 循环中需要调用的是输入操作处理 函数
         // cleanup();
     }
 
@@ -92,6 +96,7 @@ private:
     Buffer buffer{&device, &texture, &swapchain, &renderpass, &command, &descriptor};   
     // 使用构造函数创建对象时，需要传入的参数可以参考vk::raii命名空间【vk::raii::Buffer buffer{device, createInfo}】
     LoadModel loadmodel{&buffer};
+    Camera camera{};
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -100,6 +105,7 @@ private:
 
     bool framebufferResized = false;
 
+    
     void initVulkan() {
 
         std::cout << "initVulkan\n";
@@ -135,8 +141,15 @@ private:
     }
 
     void mainLoop() {
+        float lastFrameTime = glfwGetTime();
+
         while (!glfwWindowShouldClose(window.getWindow())) {
+            float currentFrameTime = glfwGetTime();
+            float deltaTime = currentFrameTime - lastFrameTime;
+            lastFrameTime = currentFrameTime;
+
             glfwPollEvents();
+            camera.processInput(window.getWindow(),camera, deltaTime);
             drawFrame();
         }
 
@@ -257,9 +270,20 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getSwapchainExtent().width / (float) swapchain.getSwapchainExtent().height, 0.1f, 10.0f);
+        // 更改模型的轴向:由Z-up改为Y-up
+        glm::mat4 axisCorrection = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f) );    //Z-up改为Y-up
+        // glm::mat4 rotation = glm::rotate( glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f) );
+        // ubo.model = rotation * axisCorrection ;
+        ubo.model = axisCorrection ;
+
+        // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));     //原本是Z-up,改为Y-up时只需要绕X轴旋转90°
+        
+        // ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        // ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getSwapchainExtent().width / (float) swapchain.getSwapchainExtent().height, 0.1f, 10.0f);
+        ubo.view = camera.getViewMatrix();
+        float aspectRatio = swapchain.getSwapchainExtent().width / static_cast<float>( swapchain.getSwapchainExtent().height);
+        ubo.proj = camera.getProjectionMatrix(aspectRatio);   // aspectRatio 的数值应该是?    应该是宽高比
+
         ubo.proj[1][1] *= -1;
 
         memcpy(buffer.getUniformBuffersMapped()[currentImage], &ubo, sizeof(ubo));

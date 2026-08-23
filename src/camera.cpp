@@ -1,5 +1,21 @@
 #include "camera.h"
 
+namespace {
+    Camera* activeCamera = nullptr;
+}
+
+Camera::Camera(glm::vec3 cameraPosition,  // world origin
+            glm::vec3 cameraUp,     // Y-axis as world up
+            float cameraYaw,
+            float cameraPitch){
+    position = cameraPosition;
+    // up = cameraUp;   此处应该是worldUp
+    worldUp = cameraUp;
+    yaw = cameraYaw;
+    pitch = cameraPitch;
+    updateCameraVectors();  // 此处调用是为了初始化计算出front, right, up
+}
+
 void Camera::processKeyboard(CameraMovement direction, float deltaTime){
     float velocity = movementSpeed * deltaTime;
     switch (direction){
@@ -24,7 +40,7 @@ void Camera::processKeyboard(CameraMovement direction, float deltaTime){
     }
 }
 
-void Camera::processMouseMovement(float xOffset, float yOffset, bool constrainPitch = true){
+void Camera::processMouseMovement(float xOffset, float yOffset, bool constrainPitch){   // 生命中设置参数默认值时, 在定义中应该删除默认值
     xOffset *= mouseSensitivity;
     yOffset *= mouseSensitivity;
     yaw += xOffset;
@@ -45,20 +61,20 @@ void Camera::updateCameraVectors(){
     front = glm::normalize(newFront);
     // caculate new up & right
     right = glm::normalize(glm::cross(front, worldUp));
-    up = glm::normalize(glm::cross(front, right));
+    up = glm::normalize(glm::cross(right,front));   // 叉乘顺序注意
 }
 
 glm::mat4 Camera::getViewMatrix() const{
     return glm::lookAt(position, position + front, up);
 }
 
-glm::mat4 Camera::getProjectionMatrix(float aspectRatio, float nearPlane = 0.1f, float farPlane = 100.0f) const{
+glm::mat4 Camera::getProjectionMatrix(float aspectRatio, float nearPlane, float farPlane) const{
     return glm::perspective(glm::radians(zoom), aspectRatio, nearPlane, farPlane);
 }
 
 
 
-void processInput(GLFWwindow* window, Camera& camera, float deltaTime){
+void Camera::processInput(GLFWwindow* window, Camera& camera, float deltaTime){
     // wasd movement following standard fps scheme conventions
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.processKeyboard(CameraMovement::FORWARD, deltaTime);
@@ -88,82 +104,93 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos){
 
     lastX = xpos;
     lastY = ypos;
-    camera.processMouseMovement(xoffset, yoffset);
+    activeCamera->processMouseMovement(xoffset, yoffset);
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset){
-    camera.processMouseScroll(yoffset);
+    // camera.processMouseScroll(yoffset);
 }
 
-void setupInputCallbacks(GLFWwindow* window){
+void Camera::setupInputCallbacks(GLFWwindow* window, Camera& camera){
+    activeCamera = &camera;
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);    // mouse capture mode
 }
 
 
-// ThirdPersonCamera::
-void ThirdPersonCamera::updataPosition(const glm::vec3& targetPos, const glm::vec3& targetFwd, float deltaTime ){
-    targetPosition = targetPos;
-    targetForward = glm::normalize(targetFwd);
+// // ThirdPersonCamera::
+// void ThirdPersonCamera::updataPosition(const glm::vec3& targetPos, const glm::vec3& targetFwd, float deltaTime ){
+//     targetPosition = targetPos;
+//     targetForward = glm::normalize(targetFwd);
     
-    // caculate
-    glm::vec3 offset = -targetForward * followDistance;
-    offset.y = followHeight;
+//     // caculate
+//     glm::vec3 offset = -targetForward * followDistance;
+//     offset.y = followHeight;
 
-    desiredPosition = offset + targetPosition;
+//     desiredPosition = offset + targetPosition;
 
-    position = glm::mix(position, desiredPosition, 1.0f - pow(followSmoothness, deltaTime * 60.0f));
-    front = glm::normalize (targetPosition - position);     // public继承自 camera, 需要通过继承类的对象访问
-    right = glm::normalize(glm::cross(front, worldUp));
-    up = glm::normalize(glm::cross(right, front));
+//     position = glm::mix(position, desiredPosition, 1.0f - pow(followSmoothness, deltaTime * 60.0f));
+//     front = glm::normalize (targetPosition - position);     // public继承自 camera, 需要通过继承类的对象访问
+//     right = glm::normalize(glm::cross(front, worldUp));
+//     up = glm::normalize(glm::cross(right, front));
 
-}
+// }
 
-void ThirdPersonCamera::handleOcclusion(const Scene& scene){
-    Ray ray;
-    ray.origin = targetPosition;
-    ray.direction = glm::normalize(desiredPosition - targetPosition);
-    // check for intersection
-    RaycastHit hit;
-    if (scene.raycast(ray, hit, glm::length(desiredPosition - targetPosition))){
-        // if intersection, move the camera to the hit point
-        float offsetDistance = 0.2f;    // small offset to avoid clipping
-        position = hit.point - (ray.direction * offsetDistance);
+// ThirdPersonCamera::ThirdPersonCamera(float TPCfollowDistance = 5.0f,
+//                     float TPCfollowHeight = 2.0f,
+//                     float TPCfollowSmoothness = 0.1f,
+//                     float TPCminDistance = 1.0f){
+//     followDistance = TPCfollowDistance;
+//     followHeight = TPCfollowHeight;
+//     followSmoothness = TPCfollowSmoothness;
+//     minDistance = TPCminDistance;
+// }
 
-        float currentDistance = glm::length(position - targetPosition);
-        if (currentDistance < minDistance){
-            position = targetPosition + ray.direction * minDistance;
-        }
+// void ThirdPersonCamera::handleOcclusion(const Scene& scene){
+//     Ray ray;
+//     ray.origin = targetPosition;
+//     ray.direction = glm::normalize(desiredPosition - targetPosition);
+//     // check for intersection
+//     RaycastHit hit;
+//     if (scene.raycast(ray, hit, glm::length(desiredPosition - targetPosition))){
+//         // if intersection, move the camera to the hit point
+//         float offsetDistance = 0.2f;    // small offset to avoid clipping
+//         position = hit.point - (ray.direction * offsetDistance);
 
-        front = glm::normalize(targetPosition - position);
-        right = glm::normalize(glm::cross( front, worldUp));
-        up = glm::normalize(glm::cross(front, right));
-    }
-}
+//         float currentDistance = glm::length(position - targetPosition);
+//         if (currentDistance < minDistance){
+//             position = targetPosition + ray.direction * minDistance;
+//         }
 
-void ThirdPersonCamera::orbit(float horizontalAngle, float verticalAngle){
-    yaw += horizontalAngle;
-    pitch += verticalAngle;
+//         front = glm::normalize(targetPosition - position);
+//         right = glm::normalize(glm::cross( front, worldUp));
+//         up = glm::normalize(glm::cross(right, front));
+//     }
+// }
+
+// void ThirdPersonCamera::orbit(float horizontalAngle, float verticalAngle){
+//     yaw += horizontalAngle;
+//     pitch += verticalAngle;
     
-    pitch = std::clamp(pitch, -89.0f, 89.0f);   // constrain pitch to avoid flipping
+//     pitch = std::clamp(pitch, -89.0f, 89.0f);   // constrain pitch to avoid flipping
 
-    // calculate new position
-    float radius = followDistance;
-    float yawRad = glm::radians(yaw);
-    float pitchRad = glm::radians(pitch);
+//     // calculate new position
+//     float radius = followDistance;
+//     float yawRad = glm::radians(yaw);
+//     float pitchRad = glm::radians(pitch);
     
-    // Convert spherical coordinates to Cartesian
-    glm::vec3 offset;
-    offset.x = radius * cos(yawRad) * cos(pitchRad);
-    offset.y = radius *  sin(pitchRad);
-    offset.z = radius * sin(yawRad) * cos(pitchRad);
-    desiredPosition = targetPosition + offset;  // set disire position
+//     // Convert spherical coordinates to Cartesian
+//     glm::vec3 offset;
+//     offset.x = radius * cos(yawRad) * cos(pitchRad);
+//     offset.y = radius *  sin(pitchRad);
+//     offset.z = radius * sin(yawRad) * cos(pitchRad);
+//     desiredPosition = targetPosition + offset;  // set disire position
 
-    front = glm::normalize(targetPosition - desiredPosition);
-    right = glm::normalize(glm::cross(front, worldUp));
-    up = glm::normalize(glm::cross(front, right));
-}
+//     front = glm::normalize(targetPosition - desiredPosition);
+//     right = glm::normalize(glm::cross(front, worldUp));
+//     up = glm::normalize(glm::cross(right, front));
+// }
 /**
  * How to USE thirdPersonCamera；
  * 👇

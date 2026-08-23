@@ -35,17 +35,19 @@ enum class CameraMovement{
 class Camera{
     void updateCameraVectors();
     public:
-    Camera(glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f),  // world origin
-            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),     // Y-axis as world up
-            float yaw = -90.f,
-            float pitch = 0.0 );
+    Camera(glm::vec3 cameraPosition = glm::vec3(0.0f,1.0f,3.0f),  // world origin
+            glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f),     // Y-axis as world up
+            float cameraYaw = -90.f,
+            float cameraPitch = 0.0 );
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix(float aspectRatio, float nearPlane = 0.1f, float farPlane = 100.0f) const;
 
+    void processInput(GLFWwindow* window, Camera& camera, float deltaTime);
+    void setupInputCallbacks(GLFWwindow* window, Camera& camera);
     // human interaction
     void processKeyboard(CameraMovement direction, float deltaTime);
     void processMouseMovement(float xOffset, float yOffset, bool constrainPitch = true);
-    void processMouseScroll(float yOffset);
+    // void processMouseScroll(float yOffset);
 
     glm::vec3 getPosition() const {
         return position;
@@ -68,42 +70,42 @@ class Camera{
     float yaw, pitch;
     private:
     // user interaction
-    float movementSpeed;
-    float mouseSensitivity;
-    float zoom;     // field-of-view of perspective projection
+    float movementSpeed = 2.0f;
+    float mouseSensitivity = 0.2f;
+    float zoom = 45.0f;     // field-of-view of perspective projection
 };
 
-class ThirdPersonCamera : public Camera{
-    private:
-    glm::vec3 targetPosition;   // current world position of target character
-    glm::vec3 targetForward;    // target forward direction
+// class ThirdPersonCamera : public Camera{
+//     private:
+//     glm::vec3 targetPosition;   // current world position of target character
+//     glm::vec3 targetForward;    // target forward direction
 
-    float followDistance;
-    float followHeight;
-    float followSmoothness;
+//     float followDistance;
+//     float followHeight;
+//     float followSmoothness;
 
-    float minDistance;
-    float raycastDiatance;
+//     float minDistance;
+//     float raycastDiatance;
 
-    glm::vec3 desiredPosition;
-    glm::vec3 smoothDampVelocity;
-    public:
-    ThirdPersonCamera(float followDistance = 5.0f,
-                    float followHeight = 2.0f,
-                    float followSmoothness = 0.1f,
-                    float minDistance = 1.0f
-    );
-    void updataPosition(const glm::vec3& targetPos, const glm::vec3& targetFwd, float deltaTime );
-    void handleOcclusion(const Scene& scene);   // 碰撞
-    void orbit(float horizontalAngle, float verticalAngle);     // 环绕相机
+//     glm::vec3 desiredPosition;
+//     glm::vec3 smoothDampVelocity;
+//     public:
+//     ThirdPersonCamera(float TPCfollowDistance = 5.0f,
+//                     float TPCfollowHeight = 2.0f,
+//                     float TPCfollowSmoothness = 0.1f,
+//                     float TPCminDistance = 1.0f
+//     );
+//     void updataPosition(const glm::vec3& targetPos, const glm::vec3& targetFwd, float deltaTime );
+//     // void handleOcclusion(const Scene& scene);   // 碰撞
+//     void orbit(float horizontalAngle, float verticalAngle);     // 环绕相机
 
-    void setFollowDistance(float distance){
-        followDistance = distance;
-    }
-    void setFollowHeight(float height){
-        followHeight = height;
-    }
-    void setFollowSmoothness(float smoothness){
-        followSmoothness = smoothness;
-    }
-};
+//     void setFollowDistance(float distance){
+//         followDistance = distance;
+//     }
+//     void setFollowHeight(float height){
+//         followHeight = height;
+//     }
+//     void setFollowSmoothness(float smoothness){
+//         followSmoothness = smoothness;
+//     }
+// };
