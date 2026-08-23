@@ -27,6 +27,7 @@ add_executable(Engine
     src/loadmodel.cpp
     src/pipeline.cpp
     src/other.cpp
+    src/camera.cpp
 )
 
 target_link_libraries(Engine PRIVATE
