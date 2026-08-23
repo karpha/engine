@@ -11,9 +11,13 @@
 // view：就是指相机中看到的位置，相机空间，对应矩阵V，可以使用 glm::lookAt(cameraPosition, cameraTarget, upVector);
 // 透视投影：矩阵P， 可以使用函数glm::perspective(glm::radians(fovY), aspectRatio, nearPlane, farPlane)， 实际使用时只需要传入参数即可
 // 正交投影与透视投影同理
+/**
+ * Ref: https://docs.vulkan.org/tutorial/latest/Building_a_Simple_Engine/Camera_Transformations/04_camera_implementation.html
+ */
+
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>

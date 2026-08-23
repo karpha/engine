@@ -24,12 +24,12 @@
 ```bash
 cmake -S . -B build  -G "Visual Studio 17 2022" -A X64 -DCMAKE_TOOLCHAIN_FILE="D:\vcpkg\vcpkg\scripts\buildsystems\vcpkg.cmake" 
 cmake --build build --config Debug
-```
+
 - 需要添加vcpkg路径方能有效识别【出错时将已有build目录删除重新执行】,
 ```bash
 cmake -S . -B build_engine -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=F:\vcpkgRebuild\vcpkg\scripts\buildsystems\vcpkg.cmake
 cmake --build build_engine --config Debug
-```
+
 - 传参数时，是用变量（复制一份）传入还是引用（&）传入，还是传变量的指针。
 
 ##### 使用RenderDoc做调试与性能调整

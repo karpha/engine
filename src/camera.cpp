@@ -123,6 +123,65 @@ void ThirdPersonCamera::updataPosition(const glm::vec3& targetPos, const glm::ve
 void ThirdPersonCamera::handleOcclusion(const Scene& scene){
     Ray ray;
     ray.origin = targetPosition;
-    ray.direction = glm::normalize(desiredPosition - )
+    ray.direction = glm::normalize(desiredPosition - targetPosition);
+    // check for intersection
+    RaycastHit hit;
+    if (scene.raycast(ray, hit, glm::length(desiredPosition - targetPosition))){
+        // if intersection, move the camera to the hit point
+        float offsetDistance = 0.2f;    // small offset to avoid clipping
+        position = hit.point - (ray.direction * offsetDistance);
+
+        float currentDistance = glm::length(position - targetPosition);
+        if (currentDistance < minDistance){
+            position = targetPosition + ray.direction * minDistance;
+        }
+
+        front = glm::normalize(targetPosition - position);
+        right = glm::normalize(glm::cross( front, worldUp));
+        up = glm::normalize(glm::cross(front, right));
+    }
 }
 
+void ThirdPersonCamera::orbit(float horizontalAngle, float verticalAngle){
+    yaw += horizontalAngle;
+    pitch += verticalAngle;
+    
+    pitch = std::clamp(pitch, -89.0f, 89.0f);   // constrain pitch to avoid flipping
+
+    // calculate new position
+    float radius = followDistance;
+    float yawRad = glm::radians(yaw);
+    float pitchRad = glm::radians(pitch);
+    
+    // Convert spherical coordinates to Cartesian
+    glm::vec3 offset;
+    offset.x = radius * cos(yawRad) * cos(pitchRad);
+    offset.y = radius *  sin(pitchRad);
+    offset.z = radius * sin(yawRad) * cos(pitchRad);
+    disiredPosition = targetPosition + offset;  // set disire position
+
+    front = glm::normalize(targetPosition - disiredPosition);
+    right = glm::normalize(glm::cross(front, worldUp));
+    up = glm::normalize(glm::cross(front, right));
+}
+/**
+ * How to USE thirdPersonCamera；
+ * 👇
+ */
+// void gameLoop(float deltaTime){
+//     // update charater position
+//     charater.update(deltaTime);
+//     // update camera position TO follow charater
+//     thirdPersonCamera.updataPosition( charater.getPosition(), charater.getForward(), deltaTime );
+//     thirdPersonCamera.handleOcclusion(scene);
+
+//     if (mouseInoutDetected){
+//         thirdPersonCamera.orbit(mouseDeltaX, mouseDeltaY);
+//     }
+//     // get view & projection matrix for rendering
+//     glm::mat4 viewMatrix = thirdPersonCamera.getViewMatrix();
+//     glm::mat4 projMatrix = thirdPersonCamera.getProjectionMatrix(aspectRatio);
+
+//     // use these matrix for rendering
+//     renderer.render(scene, viewMatrix, projMatrix);
+// }
