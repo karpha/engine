@@ -16,7 +16,8 @@ Camera::Camera(glm::vec3 cameraPosition,  // world origin
     updateCameraVectors();  // 此处调用是为了初始化计算出front, right, up
 }
 
-void Camera::processKeyboard(CameraMovement direction, float deltaTime){
+void Camera::processKeyboard(CameraMovement direction, float deltaTime){    // 使用keyboard按键只映射到了camera的position，不改变相机朝向
+    // 因此不需要调用updateCameraVectors函数更新相机方向
     float velocity = movementSpeed * deltaTime;
     switch (direction){
         case CameraMovement::FORWARD:
@@ -43,16 +44,17 @@ void Camera::processKeyboard(CameraMovement direction, float deltaTime){
 void Camera::processMouseMovement(float xOffset, float yOffset, bool constrainPitch){   // 生命中设置参数默认值时, 在定义中应该删除默认值
     xOffset *= mouseSensitivity;
     yOffset *= mouseSensitivity;
-    yaw += xOffset;
+    yaw += xOffset;     // 因为映射的原因，移动鼠标时会直接修改yaw，pitch，因此要及时调用updateCameraVectors更新camera方向
     pitch += yOffset;
     // constrain pitch
     if (constrainPitch){
         pitch = std::clamp(pitch, -89.0f,89.0f);
     }
-    updateCameraVectors();
+    updateCameraVectors();      // 鼠标移动控制camera的yaw， pitch， front， right， up，移动鼠标时导致camera朝向改变
 }
 
-void Camera::updateCameraVectors(){
+void Camera::updateCameraVectors(){     // 只有camera的朝向改变时，才需要调用该函数
+    // 也能用于front， right， up的初始化
     // caculate new front vector
     glm::vec3 newFront;
     newFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

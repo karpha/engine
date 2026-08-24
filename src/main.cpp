@@ -149,7 +149,7 @@ private:
             lastFrameTime = currentFrameTime;
 
             glfwPollEvents();
-            camera.processInput(window.getWindow(),camera, deltaTime);
+            camera.processInput(window.getWindow(),camera, deltaTime);      // keyboard的输入需要在循环中检测，鼠标的移动？
             drawFrame();
         }
 

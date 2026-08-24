@@ -68,6 +68,7 @@ class Camera{
     glm::vec3 worldUp;      // global up vector(typically Y-axis)
 
     float yaw, pitch;
+    
     private:
     // user interaction
     float movementSpeed = 2.0f;
