@@ -2,6 +2,9 @@
 
 namespace {
     Camera* activeCamera = nullptr;
+    bool firstMouse = true;
+    float lastX = 0.0f;
+    float lastY = 0.0f;
 }
 
 Camera::Camera(glm::vec3 cameraPosition,  // world origin
@@ -77,6 +80,25 @@ glm::mat4 Camera::getProjectionMatrix(float aspectRatio, float nearPlane, float 
 
 
 void Camera::processInput(GLFWwindow* window, Camera& camera, float deltaTime){
+    const bool escapeKeyIsPressed = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+    if (escapeKeyIsPressed && !camera.escapeKeyWasPressed){
+        camera.cursorCaptured = !camera.cursorCaptured;
+        glfwSetInputMode(
+            window,
+            GLFW_CURSOR,
+            camera.cursorCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL
+        );
+
+        // Ignore the distance travelled while the cursor was released. Otherwise,
+        // recapturing it would cause a sudden camera rotation.
+        firstMouse = true;
+    }
+    camera.escapeKeyWasPressed = escapeKeyIsPressed;
+
+    // When the cursor is visible, reserve keyboard and mouse input for window/UI use.
+    if (!camera.cursorCaptured)
+        return;
+
     // wasd movement following standard fps scheme conventions
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.processKeyboard(CameraMovement::FORWARD, deltaTime);
@@ -94,9 +116,11 @@ void Camera::processInput(GLFWwindow* window, Camera& camera, float deltaTime){
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos){
-    static bool firstMouse = true;      // initial mouse position  flag
-    static float lastX = 0.0f, lastY = 0.0f;
-    if (firstMouse){
+    if (activeCamera == nullptr ||
+        glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+        return;
+
+    if (firstMouse){    // 首次捕获鼠标位置时，把当前鼠标位置作为起始位置，防止初次捕获鼠标时导致相机出现偏转
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;

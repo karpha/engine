@@ -74,6 +74,8 @@ class Camera{
     float movementSpeed = 2.0f;
     float mouseSensitivity = 0.2f;
     float zoom = 45.0f;     // field-of-view of perspective projection
+    bool cursorCaptured = true;
+    bool escapeKeyWasPressed = false;
 };
 
 // class ThirdPersonCamera : public Camera{
