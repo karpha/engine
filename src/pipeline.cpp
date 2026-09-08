@@ -6,12 +6,18 @@
 #include <fstream>
 #include <stdexcept>
 
-Pipeline::Pipeline(Device* dev, Descriptor* dscrp, RenderPass* rp) {
+
+Pipeline::Pipeline(Device* dev, Descriptor* dscrp, RenderPass* rp, bool usePBR) {
     device = dev;
     descriptor = dscrp;
     renderpass = rp;
-    createGraphicsPipeline();
-    std:: cout << "\tpipeline : constructor\n";
+    if (usePBR){
+        pbrPipeline pbr;
+        pbr.createGraphicsPipeline();
+    } else {
+        createGraphicsPipeline();
+        std:: cout << "\tpipeline : constructor\n";
+    }
 }
 
 Pipeline::~Pipeline() {
@@ -176,4 +182,257 @@ void Pipeline::createGraphicsPipeline() {
 
     vkDestroyShaderModule(device->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(device->getDevice(), vertShaderModule, nullptr);
+}
+
+bool pbrPipeline::createPBRPipeline(){
+    try
+    {
+        /* code */
+        auto shaderCode = readFile("shaders/pbr.spv");      // spv contains both shader and fragment shader code
+        VkShaderModule pbrShaderModule;
+        vkCreateShaderModule(device->getDevice(), shaderModuleCreateInfo, nullptr, &pbrShaderModule);
+
+        VkPipelineShaderStageCreateInfo pbrVertexShaderStageInfo{};
+        pbrVertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        pbrVertexShaderStageInfo.module = pbrShaderModule;
+        pbrVertexShaderStageInfo.pName = "VSMain";
+
+        VkPipelineShaderStageCreateInfo pbrFragmentShaderStageInfo{};
+        pbrFragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pbrFragmentShaderStageInfo.module = pbrShaderModule;
+        pbrFragmentShaderStageInfo.pName = "PSMain";
+
+        VkPipelineShaderStageCreateInfo pbrShaderStages[] = { pbrVertexShaderStageInfo, pbrFragmentShaderStageInfo };
+
+        VkPipelineVertexInputStateCreateInfo pbrVertexInputInfo{};
+        VkVertexInputBindingDescription bindingDescription;
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(float) * 14;
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions;
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[0].offset = 0;
+        
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].offset = sizeof(float) * 3;
+        
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = sizeof(float) * 6;
+        
+        attributeDescriptions[3].binding = 0;
+        attributeDescriptions[3].location = 3;
+        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[3].offset = sizeof(float) * 8;
+        
+        attributeDescriptions[4].binding = 0;
+        attributeDescriptions[4].location = 4;
+        attributeDescriptions[4].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[4].offset = sizeof(float) * 12;       // 为什么是12
+        pbrVertexInputInfo.vertexBindingDescriptionCount = 1;
+        pbrVertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+        pbrVertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>( attributeDescriptions.size());
+        pbrVertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+        VkPipelineInputAssemblyStateCreateInfo pbrInputAssmbly;
+        pbrInputAssmbly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        pbrInputAssmbly.primitiveRestartEnable = false;
+        
+        VkPipelineViewportStateCreateInfo pbrViewPortState;
+        pbrViewPortState.viewportCount = 1;
+        pbrViewPortState.scissorCount = 1;
+        std::vector<VkDynamicState> pbrDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        VkPipelineDynamicStateCreateInfo pbrDynamicState;
+        pbrDynamicState.dynamicStateCount = static_cast<uint32_t>(pbrDynamicStates.size());
+        pbrDynamicState.pDynamicStates = pbrDynamicStates.data();
+
+        VkPipelineRasterizationStateCreateInfo pbrRastrizer;
+        pbrRastrizer.depthClampEnable = false;
+        pbrRastrizer.rasterizerDiscardEnable = false;
+        pbrRastrizer.polygonMode = VK_POLYGON_MODE_FILL;
+        pbrRastrizer.lineWidth = 1.0f;
+        pbrRastrizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        pbrRastrizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        pbrRastrizer.depthBiasEnable = false;
+
+        VkPipelineDepthStencilStateCreateInfo pbrDepthStencil;
+        pbrDepthStencil.depthTestEnable = true;
+        pbrDepthStencil.depthWriteEnable = true;
+        pbrDepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        pbrDepthStencil.depthBoundsTestEnable = false;
+        pbrDepthStencil.stencilTestEnable = false;
+
+        VkPipelineColorBlendAttachmentState pbrColorBlendAttachment;
+        pbrColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        pbrColorBlendAttachment.blendEnable = true;
+        pbrColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        pbrColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        pbrColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+        pbrColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+        pbrColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        pbrColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        VkPipelineColorBlendStateCreateInfo pbrColorBlend;
+        pbrColorBlend.logicOpEnable = false;
+        pbrColorBlend.attachmentCount = 1;
+        pbrColorBlend.pAttachments = &pbrColorBlendAttachment;
+
+        VkPushConstantRange pbrPushConstantRange;
+        pbrPushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pbrPushConstantRange.offset = 0;
+        pbrPushConstantRange.size = sizeof(PushConstantBlock);
+
+        VkPipelineLayoutCreateInfo pbrPipelineLayoutInfo;
+        pbrPipelineLayoutInfo.pushConstantRangeCount = 1;
+        pbrPipelineLayoutInfo.pPushConstantRanges = &pbrPushConstantRange;
+        pbrPipelineLayoutInfo.setLayoutCount = 1;
+        pbrPipelineLayoutInfo.pSetLayouts = &*descriptorSetLayout;
+
+        auto pbrPipelineLayout = createPipelineLayout(pbrPipelineLayoutInfo);
+
+        // pbr pipeline create👇
+        VkGraphicsPipelineCreateInfo pbrPipelineInfo;
+        pbrPipelineInfo.basePipelineHandle = nullptr;
+        pbrPipelineInfo.layout = &pbrPipelineLayout;
+        pbrPipelineInfo.pColorBlendState = &pbrColorBlend;
+        pbrPipelineInfo.pDepthStencilState = &pbrDepthStencil;
+        pbrPipelineInfo.pDynamicState = &pbrDynamicState;
+        pbrPipelineInfo.pInputAssemblyState = &pbrInputAssmbly;
+        pbrPipelineInfo.pMultisampleState = &pbrMultisampling;
+        pbrPipelineInfo.pRasterizationState = &pbrRastrizer;
+        pbrPipelineInfo.pStages = pbrShaderStages.data();
+        pbrPipelineInfo.pVertexInputState = &pbrVertexInputInfo;
+        pbrPipelineInfo.pViewportState = &pbrViewPortState;
+        pbrPipelineInfo.renderPass = nullptr;
+        pbrPipelineInfo.stageCount = static_cast<uint32_t> (pbrShaderStages.size());
+        pbrPipelineInfo.subpass = 0;
+
+        VkPipelineRenderingCreateInfo pbrRenderingInfo;
+        pbrRenderingInfo.colorAttachmentCount = 1;
+        pbrRenderingInfo.depthAttachmentFormat = findDepthFormat();
+        pbrRenderingInfo.pColorAttachmentFormats = &swapchainImageFormat;
+        
+        pbrPipelineInfo.pNext = &pbrRenderingInfo;
+        pbrPipeline = createGraphicsPipeline(nullptr, pipelineInfo );
+        
+        return true;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Error creating PBR pipeline " << e.what() << '\n';
+        return false;
+    }
+    
+}
+
+
+// pbr : update uniform buffer 👇
+void pbrUpdateUniformBuffer( uint32_t currentFrame , Camera* camera){
+    // auto transform = 
+    UniformBufferObject pbrUBO{};
+    pbrUBO.model = transform->GetmodelMatrix();
+    if (camera){
+        pbrUBO.view = camera->getViewMatrix();
+        pbrUBO.proj = camera->getProjectionMatrix();
+    } else
+    {
+        /* code */
+        // use default view & proj matrix if no camera  
+        pbrUBO.view = glm::lookAt(glm::vec3(2.0f,2.0f,2.0f), glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 1.0f) );
+        pbrUBO.proj = glm::perspective( glm::radians(45.0f), swapchain.getSwapchainExtent().width / (float)swapchain.getSwapchainExtent().height,0.1f, 100.0f );
+        pbrUBO.proj[1][1] *= -1;
+    }
+    // set up lights
+    // white light from above
+    pbrUBO.lightPositions[0] = glm::vec4(0.0f, 5.0f, 5.0f, 1.0f);
+    pbrUBO.lightColors[0] = glm::vec4(300.0f, 300.0f, 300.0f, 1.0f);
+    // blue light from left
+    pbrUBO.lightPositions[1] = glm::vec4(-5.0f, 0.0f, 0.0f, 1.0f);
+    pbrUBO.lioghtColors[1] = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
+    // red light from right
+    pbrUBO.lightPositions[2] = glm::vec4(5.0f, 0.0f, 0.0f, 1.0f);
+    pbrUBO.lioghtColors[2] = glm::vec4(300.0f, 0.0f, 0.0f, 1.0f);
+    // green light from behind
+    pbrUBO.lightPositions[3] = glm::vec4(-5.0f, 0.0f, 0.0f, 1.0f);
+    pbrUBO.lioghtColors[3] = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
+    pbrUBO.camPos = glm::vec4( camera ? camera->getPosition() : glm::vec3(2.0f,2.0f,2.0f), 1.0f );
+
+    // pbr parameter
+    pbrUBO.exposure = 4.5f;
+    pbrUBO.gamma = 2.2f;
+    pbrUBO.prefilteredCubeMipLevels = 1.0f;
+    pbrUBO.scaleIBLAmbient = 1.0f;
+
+    memcpy(uniformBuffers[currentFrame].mapped, &pbrUBO, sizeof(pbrUBO));
+
+}
+// pbr : update uniform buffer 👆
+// pbr : push material properties to shader 👇
+void pushMaterialProperties(VkCommandBuffer commandBuffer, const Model* model, uint32_t materialIndex){
+    // get material from model
+    const Material& material = model->materials[materialIndex];
+
+    // define pbr push constants
+    pbrPipeline::pbrPushConstantBlock pbrPushConstants{};
+    pbrPushConstants.baseColorFactor = material.baseColorFactor;
+    pbrPushConstants.metallicFactor = material.metallicFactor;
+    pbrPushConstants.roughnessFactor = material.roughness;
+    pbrPushConstants.baseColorTextureSet = material.baseColorTextureIndex;
+    pbrPushConstants.physicalDescriptorTextureSet = material.metallicRoughnessTextureIndex;
+    pbrPushConstants.normalTextureSet = material.normalTextureIndex;
+    pbrPushConstants.occlusionTextureSet = material.occlusionTextureIndex;
+    pbrPushConstants.emissiveTextureSet = material.emissiveTextureIndex;
+    pbrPushConstants.alphaMask = material.alphaMode == AlphaMode::MASK ? 1.0f : 0.0f;
+    pbrPushConstants.alphaMaskCutoff = material.alphaCutoff;
+
+    // push constants to shader
+    commandBuffer.pushConstants(*pbrPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pbrPushConstantBlock), &pbrPushConstants);
+}
+// pbr : push material properties to shader 👆
+
+void  pbrPipeline::pbrRenderTest() {
+    // Set up camera
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    // Set up lights
+    // Light 1: White light from above
+    glm::vec4 lightPos1 = glm::vec4(0.0f, 5.0f, 5.0f, 1.0f);
+    glm::vec4 lightColor1 = glm::vec4(300.0f, 300.0f, 300.0f, 1.0f);
+
+    // Light 2: Blue light from the left
+    glm::vec4 lightPos2 = glm::vec4(-5.0f, 0.0f, 0.0f, 1.0f);
+    glm::vec4 lightColor2 = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
+
+    // Load glTF models
+    Model* damagedHelmet = modelLoader.loadModel("models/DamagedHelmet.gltf");
+    Model* flightHelmet = modelLoader.loadModel("models/FlightHelmet.gltf");
+
+    // The models already have PBR materials defined in the glTF file
+    // We can render them directly with our PBR pipeline
+
+    // Render the models with different transformations
+    renderModel(damagedHelmet, glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.5f));
+    renderModel(flightHelmet, glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.5f));
+
+    // We can also experiment with modifying the material properties
+    // For example, to make the damaged helmet more metallic:
+    if (damagedHelmet->materials.size() > 0) {
+        // Store the original value to restore later
+        float originalMetallic = damagedHelmet->materials[0].metallicFactor;
+
+        // Modify the material
+        damagedHelmet->materials[0].metallicFactor = 1.0f;
+
+        // Render with modified material
+        renderModel(damagedHelmet, glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.5f));
+
+        // Restore original value
+        damagedHelmet->materials[0].metallicFactor = originalMetallic;
+    }
 }

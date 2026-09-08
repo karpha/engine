@@ -11,7 +11,7 @@ class RenderPass;
 
 class Pipeline{
 public:
-    Pipeline(Device* dev, Descriptor* dscrp, RenderPass* rp);
+    Pipeline(Device* dev, Descriptor* dscrp, RenderPass* rp, bool usePBR = false);
     ~Pipeline();
 
     Pipeline(const Pipeline&) = delete;
@@ -26,12 +26,41 @@ public:
 
     void createGraphicsPipeline();
     VkShaderModule createShaderModule(const std::vector<char>& code);
-
+    
+protected:
+    Device* device;
 private:
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 
-    Device* device;
     Descriptor* descriptor;
     RenderPass* renderpass;
+};
+
+// pbr pipeline 👇
+class pbrPipeline : public Pipeline{
+public:
+    pbrPipeline(){
+        std::cout << "pbrPipeline \n";
+    };
+    ~pbrPipeline(){};
+    VkPipelineLayout pbrPipelineLayout;
+    VkPipeline pbrpipeline;
+
+    // push constant
+    struct pbrPushConstantBlock{
+        glm::vec4 baseColorFactor;
+        float metallicFactor;
+        float roughnessFactor;
+        int baseColorTextureSet;
+        int physicalDescriptorTextureSet;
+        int normalTextureSet;
+        int occlusionTextureSet;
+        int emissiveTextureSet;
+        float alphaMask;
+        float alphaMaskCutoff;
+    };
+    bool createPBRPipeline();
+    void pushMaterialProperties(VkCommandBuffer commandBuffer, const Model* model, uint32_t materialIndex);
+    void pbrRenderTest();
 };

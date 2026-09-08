@@ -28,6 +28,7 @@ add_executable(Engine
     src/pipeline.cpp
     src/other.cpp
     src/camera.cpp
+    src/light.cpp
 )
 
 target_link_libraries(Engine PRIVATE

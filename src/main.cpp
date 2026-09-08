@@ -1,3 +1,6 @@
+// 这个main.cpp只能算是一个renderer渲染器？
+// engine与render之间的区别？
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -207,7 +210,7 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, bool usePBR = false) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -230,6 +233,43 @@ private:
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        if (usePBR){
+               // Bind the PBR pipeline
+            vkCmdBindPipeline(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS, pbrPipeline.getPBRGraphicsPipeline())
+            // For each model in the scene
+            for (const auto& model : models) {
+                // Bind vertex and index buffers
+                vk::Buffer vertexBuffers[] = {model->vertexBuffer};
+                vk::DeviceSize offsets[] = {0};
+                vkCmdBindVertexBuffers(commandBuffer,0,1,vertexbuffers, offset);
+                vkCmdBindIndexBuffer(commandBuffer,model->indexBuffer ,0, VK_INDEX_TYPE_UINT32);
+
+                // For each mesh in the model
+                for (const auto& mesh : model->meshes) {
+                    // Push material properties
+                    pushMaterialProperties(commandBuffer, model, mesh.materialIndex);
+
+                    // Bind descriptor sets
+                    commandBuffer.bindDescriptorSets(
+                        vk::PipelineBindPoint::eGraphics,
+                        *pbrPipelineLayout,
+                        0,
+                        1,
+                        &descriptorSets[imageIndex],
+                        0,
+                        nullptr
+                    );
+                    vkCmdBindDescriptorSets(commandBuffer,
+                        VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                        &pbrPipelineLayout, 
+                        0, 1, &(descriptor.getDescriptorSets())[imageIndex], 
+                        0, nullptr)
+                    // Draw
+                    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indexCount), 1, mesh.firstIndex, 0, 0)
+                }
+            }
+        } else{
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
 
@@ -256,10 +296,11 @@ private:
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipelineLayout(), 0, 1, &(descriptor.getDescriptorSets())[currentFrame], 0, nullptr);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(buffer.getIndices().size()), 1, 0, 0, 0);
 
-        vkCmdEndRenderPass(commandBuffer);
+            vkCmdEndRenderPass(commandBuffer);
 
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
+            if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+                throw std::runtime_error("failed to record command buffer!");
+            }
         }
     }
 
