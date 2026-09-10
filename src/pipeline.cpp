@@ -333,7 +333,7 @@ bool pbrPipeline::createPBRPipeline(){
 // pbr : update uniform buffer 👇
 void pbrUpdateUniformBuffer( uint32_t currentFrame , Camera* camera){
     // auto transform = 
-    UniformBufferObject pbrUBO{};
+    pbrUniformBufferObject pbrUBO{};
     pbrUBO.model = transform->GetmodelMatrix();
     if (camera){
         pbrUBO.view = camera->getViewMatrix();
@@ -352,13 +352,13 @@ void pbrUpdateUniformBuffer( uint32_t currentFrame , Camera* camera){
     pbrUBO.lightColors[0] = glm::vec4(300.0f, 300.0f, 300.0f, 1.0f);
     // blue light from left
     pbrUBO.lightPositions[1] = glm::vec4(-5.0f, 0.0f, 0.0f, 1.0f);
-    pbrUBO.lioghtColors[1] = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
+    pbrUBO.lightColors[1] = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
     // red light from right
     pbrUBO.lightPositions[2] = glm::vec4(5.0f, 0.0f, 0.0f, 1.0f);
-    pbrUBO.lioghtColors[2] = glm::vec4(300.0f, 0.0f, 0.0f, 1.0f);
+    pbrUBO.lightColors[2] = glm::vec4(300.0f, 0.0f, 0.0f, 1.0f);
     // green light from behind
     pbrUBO.lightPositions[3] = glm::vec4(-5.0f, 0.0f, 0.0f, 1.0f);
-    pbrUBO.lioghtColors[3] = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
+    pbrUBO.lightColors[3] = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
     pbrUBO.camPos = glm::vec4( camera ? camera->getPosition() : glm::vec3(2.0f,2.0f,2.0f), 1.0f );
 
     // pbr parameter
@@ -410,8 +410,8 @@ void  pbrPipeline::pbrRenderTest() {
     glm::vec4 lightColor2 = glm::vec4(0.0f, 0.0f, 300.0f, 1.0f);
 
     // Load glTF models
-    Model* damagedHelmet = modelLoader.loadModel("models/DamagedHelmet.gltf");
-    Model* flightHelmet = modelLoader.loadModel("models/FlightHelmet.gltf");
+    Model* damagedHelmet = modelLoader.loadModel("models/DamagedHelmet/DamagedHelmet.gltf");
+    Model* flightHelmet = modelLoader.loadModel("models/FlightHelmet/FlightHelmet.gltf");
 
     // The models already have PBR materials defined in the glTF file
     // We can render them directly with our PBR pipeline

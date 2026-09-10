@@ -1,4 +1,5 @@
 #include "light.h"
+// 👇all this algorithm are used for shaders
 
 // normal distribution function - GGX/Trowbridge-Reitz Distribution
 // produce realistic highlight shapes 

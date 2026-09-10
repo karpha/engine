@@ -1,5 +1,21 @@
 
 // Fragment shader entry point - Executes once per pixel
+struct VSInput
+{
+    glm::vec3 Position;
+    glm::vec3 Normal;
+    glm::vec2 UV;
+    glm::vec4 Tangent;      // w component = handedness
+    /* data */
+};
+struct VSOutput{
+    glm::vec4 Position;
+    glm::vec3 WorldPos;
+    glm::vec3 Normal;
+    glm::vec2 UV;
+    glm::vec4 Tangent;
+};
+
 [[shader("fragment")]]
 float4 PSMain(VSOutput input) : SV_TARGET
 {
