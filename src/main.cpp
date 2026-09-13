@@ -5,7 +5,9 @@
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
+#ifndef GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#endif
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -46,6 +48,7 @@
 #include "pipeline.h"
 #include "other.h"
 #include "camera.h"
+#include "pbr.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -68,7 +71,9 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 class HelloTriangleApplication {
     public:
-    void run() {
+    void run(bool enablePbr = true, int frames = 0) {
+        usePBR = enablePbr;
+        frameLimit = frames;
         std::cout << "run : \n";
         initVulkan();
         // 使用自定义相机
@@ -76,6 +81,13 @@ class HelloTriangleApplication {
 
         mainLoop();     // 循环中需要调用的是输入操作处理 函数
         // cleanup();
+    }
+
+    ~HelloTriangleApplication() {
+        vkDeviceWaitIdle(device.getDevice());
+        for (auto framebuffer : swapchain.getSwapchainFrameBuffers())
+            vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
+        swapchain.getSwapchainFrameBuffers().clear();
     }
 
 private:
@@ -90,7 +102,7 @@ private:
     
     RenderPass renderpass{&device, &swapchain};
     Descriptor descriptor{&device};
-    Pipeline pipeline{&device, &descriptor, &renderpass};
+    std::unique_ptr<Pipeline> pipeline;
 
     Command command{&device, &descriptor};
 
@@ -98,8 +110,11 @@ private:
     Other other{&device, &swapchain, &texture, &renderpass, &descriptor};
     Buffer buffer{&device, &texture, &swapchain, &renderpass, &command, &descriptor};   
     // 使用构造函数创建对象时，需要传入的参数可以参考vk::raii命名空间【vk::raii::Buffer buffer{device, createInfo}】
-    LoadModel loadmodel{&buffer};
+    std::unique_ptr<LoadModel> loadmodel;
     Camera camera{};
+    PbrRenderer pbr{device, buffer, texture, renderpass, MAX_FRAMES_IN_FLIGHT};
+    bool usePBR = true;
+    int frameLimit = 0;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -119,23 +134,26 @@ private:
         
         command.setGraphicsQueue(device.getGraphicsQueue());   // 必须在使用 command 执行提交前设置队列
         texture.init(&buffer);
-        std::cout << "before createTextureImage\n";
-        texture.createTextureImage();
-        std::cout << "after createTextureImage\n";
-        texture.createTextureImageView();
-        std::cout << "after createTextureImageView\n";
-        texture.createTextureSampler();
-        std::cout << "after createTextureSampler\n";
-
-        // 添加buffer init
-        buffer.createVertexBuffer();
-        buffer.createIndexBuffer();
-        buffer.createUniformBuffers();
-        // 这里使用descriptor init，传入texture， buffer
-        descriptor.init(&buffer, &texture);
-        descriptor.createDescriptorPool();
-        descriptor.createDescriptorSets();
-        
+        if (!usePBR) {
+            pipeline = std::make_unique<Pipeline>(&device, &descriptor, &renderpass);
+            loadmodel = std::make_unique<LoadModel>(&buffer);
+            texture.createTextureImage();
+            texture.createTextureImageView();
+            texture.createTextureSampler();
+            buffer.createVertexBuffer();
+            buffer.createIndexBuffer();
+            buffer.createUniformBuffers();
+            descriptor.init(&buffer, &texture);
+            descriptor.createDescriptorPool();
+            descriptor.createDescriptorSets();
+        }
+        if (usePBR) {
+            pbr.initialize();
+            const auto damaged = pbr.loadModel("models/DamagedHelmet/DamagedHelmet.gltf");
+            const auto flight = pbr.loadModel("models/FlightHelmet/FlightHelmet.gltf");
+            pbr.fitModel(damaged, {-0.85f, 1.0f, 0.0f}, 1.5f);
+            pbr.fitModel(flight, {0.85f, 1.0f, 0.0f}, 1.5f);
+        }
         command.createCommandBuffers();
         other.createSyncObjects();
         imageAvailableSemaphores = other.getImageAvailableSemaphores();
@@ -154,12 +172,19 @@ private:
             glfwPollEvents();
             camera.processInput(window.getWindow(),camera, deltaTime);      // keyboard的输入需要在循环中检测，鼠标的移动？
             drawFrame();
+            if (frameLimit > 0 && --frameLimit == 0) glfwSetWindowShouldClose(window.getWindow(), GLFW_TRUE);
         }
 
         vkDeviceWaitIdle(device.getDevice());
     }
 
     void cleanupSwapChain() {       // for window resized
+        for (auto framebuffer : swapchain.getSwapchainFrameBuffers()) {
+            vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
+        }
+        swapchain.getSwapchainFrameBuffers().clear();
+
+
         vkDestroyImageView(device.getDevice(), texture.getDepthImageView(), nullptr);
         vkDestroyImage(device.getDevice(), texture.getDepthImage(), nullptr);
         vkFreeMemory(device.getDevice(), texture.getDepthImageMemory(), nullptr);
@@ -173,11 +198,6 @@ private:
         texture.setColorImageView(VK_NULL_HANDLE);
         texture.setColorImage(VK_NULL_HANDLE);
         texture.setColorImageMemory(VK_NULL_HANDLE);
-
-        for (auto framebuffer : swapchain.getSwapchainFrameBuffers()) {
-            vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
-        }
-        swapchain.getSwapchainFrameBuffers().clear();
 
         for (auto imageView : swapchain.getSwapchainImageViews()) {
             vkDestroyImageView(device.getDevice(), imageView, nullptr);
@@ -210,7 +230,7 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, bool usePBR = false) {
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -234,44 +254,11 @@ private:
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        if (usePBR){
-               // Bind the PBR pipeline
-            vkCmdBindPipeline(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS, pbrPipeline.getPBRGraphicsPipeline())
-            // For each model in the scene
-            for (const auto& model : models) {
-                // Bind vertex and index buffers
-                vk::Buffer vertexBuffers[] = {model->vertexBuffer};
-                vk::DeviceSize offsets[] = {0};
-                vkCmdBindVertexBuffers(commandBuffer,0,1,vertexbuffers, offset);
-                vkCmdBindIndexBuffer(commandBuffer,model->indexBuffer ,0, VK_INDEX_TYPE_UINT32);
-
-                // For each mesh in the model
-                for (const auto& mesh : model->meshes) {
-                    // Push material properties
-                    pushMaterialProperties(commandBuffer, model, mesh.materialIndex);
-
-                    // Bind descriptor sets
-                    commandBuffer.bindDescriptorSets(
-                        vk::PipelineBindPoint::eGraphics,
-                        *pbrPipelineLayout,
-                        0,
-                        1,
-                        &descriptorSets[imageIndex],
-                        0,
-                        nullptr
-                    );
-                    vkCmdBindDescriptorSets(commandBuffer,
-                        VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                        &pbrPipelineLayout, 
-                        0, 1, &(descriptor.getDescriptorSets())[imageIndex], 
-                        0, nullptr)
-                    // Draw
-                    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indexCount), 1, mesh.firstIndex, 0, 0)
-                }
-            }
+        if (usePBR) {
+            pbr.draw(commandBuffer, currentFrame, swapchain.getSwapchainExtent());
         } else{
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getGraphicsPipeline());
 
             VkViewport viewport{};
             viewport.x = 0.0f;
@@ -293,14 +280,13 @@ private:
 
             vkCmdBindIndexBuffer(commandBuffer, buffer.getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipelineLayout(), 0, 1, &(descriptor.getDescriptorSets())[currentFrame], 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), 0, 1, &(descriptor.getDescriptorSets())[currentFrame], 0, nullptr);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(buffer.getIndices().size()), 1, 0, 0, 0);
 
-            vkCmdEndRenderPass(commandBuffer);
-
-            if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-                throw std::runtime_error("failed to record command buffer!");
-            }
+        }
+        vkCmdEndRenderPass(commandBuffer);
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
         }
     }
 
@@ -342,7 +328,8 @@ private:
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        updateUniformBuffer(currentFrame);
+        if (usePBR) pbr.updateFrame(currentFrame, camera, swapchain.getSwapchainExtent(), swapchain.getSwapchainImageFormat());
+        else updateUniformBuffer(currentFrame);
 
         vkResetFences(device.getDevice(), 1, &inFlightFences[currentFrame]);
 
@@ -394,11 +381,22 @@ private:
     }
 };
 
-int main() {
+int main(int argc, char** argv) {
     try {
         std::cout << "main: try: \n";
+        bool enablePbr = true;
+        int frames = 0;
+        for (int i = 1; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg == "--validate-pbr") { PbrRenderer::validateAssets("models"); return EXIT_SUCCESS; }
+            if (arg == "--legacy") enablePbr = false;
+            else if (arg == "--frames" && i + 1 < argc) {
+                frames = std::stoi(argv[++i]);
+                if (frames <= 0) throw std::runtime_error("--frames must be positive");
+            } else if (arg != "--legacy") throw std::runtime_error("Usage: Engine [--legacy] [--frames N] [--validate-pbr]");
+        }
         HelloTriangleApplication app;   // 对象在 try 内构造，构造阶段的异常可被捕获并打印
-        app.run();
+        app.run(enablePbr, frames);
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

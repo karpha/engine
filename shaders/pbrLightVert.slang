@@ -1,47 +1,19 @@
-// Vertex shader entry point - Executes once per vertex
-
-struct VSInput
-{
-    glm::vec3 Position;
-    glm::vec3 Normal;
-    glm::vec2 UV;
-    glm::vec4 Tangent;      // w component = handedness
-    /* data */
+#include "pbrCommon.slang"
+struct VSInput {
+    [[vk::location(0)]] float3 Position : POSITION;
+    [[vk::location(1)]] float3 Normal : NORMAL;
+    [[vk::location(2)]] float2 UV : TEXCOORD0;
+    [[vk::location(3)]] float4 Tangent : TANGENT;
 };
-struct VSOutput{
-    glm::vec4 Position;
-    glm::vec3 WorldPos;
-    glm::vec3 Normal;
-    glm::vec2 UV;
-    glm::vec4 Tangent;
-};
-
-[[shader("vertex")]]
-VSOutput VSMain(VSInput input)
-{
+[shader("vertex")]
+VSOutput VSMain(VSInput input) {
     VSOutput output;
-
-    // Transform vertex position through the rendering pipeline
-    // Model -> World -> Camera -> Clip space transformation chain
-    float4 worldPos = mul(ubo.model, float4(input.Position, 1.0));
-    output.Position = mul(ubo.proj, mul(ubo.view, worldPos));
-
-    // Pass world position for fragment lighting calculations
-    // Fragment shader needs world space position to calculate light vectors
-    output.WorldPos = worldPos.xyz;
-
-    // Transform normal from model space to world space
-    // Use only rotation/scale part of model matrix (upper-left 3x3)
-    // Normalize to ensure unit length after transformation
-    output.Normal = normalize(mul((float3x3)ubo.model, input.Normal));
-
-    // Pass through texture coordinates unchanged
-    // UV coordinates are typically in [0,1] range and don't need transformation
+    float4 world = mul(ubo.model, float4(input.Position, 1.0));
+    output.Position = mul(ubo.proj, mul(ubo.view, world));
+    output.WorldPos = world.xyz;
+    output.Normal = normalize(mul((float3x3)ubo.normalMatrix, input.Normal));
+    output.Tangent = float4(mul((float3x3)ubo.model, input.Tangent.xyz),
+                           input.Tangent.w * (determinant((float3x3)ubo.model) < 0.0 ? -1.0 : 1.0));
     output.UV = input.UV;
-
-    // Pass tangent vector for normal mapping
-    // Will be used in fragment shader to construct tangent-space basis
-    output.Tangent = input.Tangent;
-
     return output;
 }

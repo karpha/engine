@@ -34,3 +34,46 @@ cmake --build build_engine --config Debug
 
 ##### 使用RenderDoc做调试与性能调整
 > 光照模型，pbr
+
+### PBR renderer
+
+PBR C++ implementation and GPU layouts live in `pbr.h` / `pbr.cpp`.
+The existing Slang shaders implement GGX / Smith / Schlick direct lighting.
+`main.cpp` only selects the rendering path, loads the demo and calls update/draw.
+`Buffer` and `Texture` supply the existing allocation/upload helpers.
+
+Requirements: Vulkan 1.1 device, Vulkan SDK with slangc, and the vcpkg manifest
+(including the pinned tinygltf 2.9.7 dependency). No manual SPIR-V compilation
+is needed: the PbrShaders CMake target builds both stages with column-major matrices.
+
+From the repository root, after configuring the existing build directory:
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Debug
+ctest --test-dir build -C Debug --output-on-failure
+./build/Debug/Engine.exe
+./build/Debug/Engine.exe --legacy
+./build/Debug/Engine.exe --frames 120
+./build/Debug/Engine.exe --validate-pbr
+```
+
+Default scene: DamagedHelmet and FlightHelmet, fitted side by side. Camera controls
+are unchanged. Public PbrRenderer methods set model transforms, point lights and
+exposure. Call updateFrame only after waiting on that frame's fence; draw must be
+inside the compatible existing render pass. Load models during initialization.
+
+Supported: static triangle glTF/glb scenes, node transforms, uint8/16/32 indices,
+accessor offsets/strides and normalized attributes, generated missing normals and
+tangents, five material maps, mipmaps, glTF sampler wrapping/filtering, sRGB color
+maps, alpha mask/blend, double-sided materials and mirrored transforms. Transparent
+primitives are sorted by their centers (intersecting transparent geometry may need
+more advanced sorting). A default material and fallback maps cover missing inputs.
+
+Limits: one UV set (TEXCOORD_0); no sparse accessors, skinning, morph targets or
+required extensions. Optional material extensions use the core material fallback,
+with a console message. FlightHelmet's transmission lens therefore has no physical
+transmission yet. Ambient light is a constant approximation, not IBL; there are no
+shadow maps. Existing swapchain recreation assumes the attachment format stays
+compatible with the render pass. Tests exercise the actual CPU glTF loader, bounds,
+accessor normalization/stride handling, and generated normal/tangent bases.
