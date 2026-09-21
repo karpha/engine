@@ -15,7 +15,7 @@ struct PbrMaterial {
     float4 surface;
     int4 flags;
 };
-[[vk::binding(0, 0)]] ConstantBuffer<PbrUniforms> ubo;
+[[vk::binding(0, 0)]] ConstantBuffer<PbrUniforms> ubo;      // ubo数据 从 set 0、binding 0 对应的缓冲区读取
 struct VSOutput {
     float4 Position : SV_Position;
     [[vk::location(0)]] float3 WorldPos : TEXCOORD0;

@@ -1,14 +1,15 @@
-﻿{
+{
     "name":  "engine",
     "version":  "1.0.0",
     "dependencies":  [
-                         "vulkan",
-                         "glfw3",
-                         "glm",
-                         "tinyobjloader",
-                         "stb",
-                         "tinygltf"
-                     ],
+        "vulkan",
+        "glfw3",
+        "glm",
+        "tinyobjloader",
+        "stb",
+        "tinygltf",
+        { "name": "imgui", "features": ["docking-experimental"] }
+    ],
     "builtin-baseline":  "4493042c759d3bdff26164695dbee500d1e696c8",
     "overrides":  [
                       {

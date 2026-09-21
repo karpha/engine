@@ -1,6 +1,6 @@
 #include "pbrCommon.slang"
 [[vk::push_constant]] ConstantBuffer<PbrMaterial> material;
-[[vk::binding(1, 0)]] Sampler2D baseColorMap;
+[[vk::binding(1, 0)]] Sampler2D baseColorMap;   //  binding 1, set 0
 [[vk::binding(2, 0)]] Sampler2D metallicRoughnessMap;
 [[vk::binding(3, 0)]] Sampler2D normalMap;
 [[vk::binding(4, 0)]] Sampler2D occlusionMap;

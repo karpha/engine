@@ -49,6 +49,7 @@
 #include "other.h"
 #include "camera.h"
 #include "pbr.h"
+#include "ImGui.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -79,6 +80,7 @@ class HelloTriangleApplication {
         // 使用自定义相机
         camera.setupInputCallbacks(window.getWindow(), camera);     // callback回调函数只调用一次,不应该放在循环中
 
+        gui.init(window.getWindow(), instance, device, swapchain, renderpass, MAX_FRAMES_IN_FLIGHT);
         mainLoop();     // 循环中需要调用的是输入操作处理 函数
         // cleanup();
     }
@@ -113,6 +115,7 @@ private:
     std::unique_ptr<LoadModel> loadmodel;
     Camera camera{};
     PbrRenderer pbr{device, buffer, texture, renderpass, MAX_FRAMES_IN_FLIGHT};
+    ImGuiForVulkan gui;
     bool usePBR = true;
     int frameLimit = 0;
 
@@ -224,6 +227,7 @@ private:
         other.createColorResources();
         other.createDepthResources();
         buffer.createFramebuffers();
+        gui.onSwapChainRecreated();
     }
 
     bool hasStencilComponent(VkFormat format) {
@@ -237,6 +241,8 @@ private:
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
+
+        gui.prepareFrame(commandBuffer, currentFrame);
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -284,6 +290,7 @@ private:
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(buffer.getIndices().size()), 1, 0, 0, 0);
 
         }
+        gui.drawFrame(commandBuffer);
         vkCmdEndRenderPass(commandBuffer);
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
@@ -328,6 +335,7 @@ private:
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
+        gui.newFrame(camera, usePBR ? &pbr : nullptr);
         if (usePBR) pbr.updateFrame(currentFrame, camera, swapchain.getSwapchainExtent(), swapchain.getSwapchainImageFormat());
         else updateUniformBuffer(currentFrame);
 

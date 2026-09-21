@@ -1,4 +1,4 @@
-#include "pbr.h"
+﻿#include "pbr.h"
 #include "buffer.h"
 #include "texture.h"
 #include "renderpass.h"
@@ -383,7 +383,7 @@ struct PbrRenderer::Impl {
     }
     void createPipelines() {
         require(descriptorLayout == VK_NULL_HANDLE,"PBR initialize called twice");
-        std::array<VkDescriptorSetLayoutBinding,6> bindings{};
+        std::array<VkDescriptorSetLayoutBinding,6> bindings{};      // 对应shader 中的binding数据？
         for (uint32_t i=0;i<bindings.size();++i) {
             bindings[i].binding = i; bindings[i].descriptorCount = 1;
             bindings[i].descriptorType = i == 0 ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -392,7 +392,12 @@ struct PbrRenderer::Impl {
         VkDescriptorSetLayoutCreateInfo descriptorInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
         descriptorInfo.bindingCount = uint32_t(bindings.size()); descriptorInfo.pBindings = bindings.data();
         check(vkCreateDescriptorSetLayout(device.getDevice(),&descriptorInfo,nullptr,&descriptorLayout),"create PBR descriptor layout");
-        VkPushConstantRange push{VK_SHADER_STAGE_FRAGMENT_BIT,0,sizeof(PbrMaterialConstants)};
+
+        VkPushConstantRange push{
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(PbrMaterialConstants)};
+
         VkPipelineLayoutCreateInfo layoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         layoutInfo.setLayoutCount = 1; layoutInfo.pSetLayouts = &descriptorLayout;
         layoutInfo.pushConstantRangeCount = 1; layoutInfo.pPushConstantRanges = &push;
@@ -413,16 +418,21 @@ struct PbrRenderer::Impl {
         loadShader("pbr.vert.spv",vert); loadShader("pbr.frag.spv",frag);
         std::array<VkPipelineShaderStageCreateInfo,2> stages{};
         stages[0].sType = stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT; stages[0].module = vert.handle; stages[0].pName = "VSMain";
+        stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT; stages[0].module = vert.handle; stages[0].pName = "VSMain";       // 将这两个函数配置为两个着色器阶段
         stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT; stages[1].module = frag.handle; stages[1].pName = "PSMain";
-        VkVertexInputBindingDescription binding{0,sizeof(PbrVertex),VK_VERTEX_INPUT_RATE_VERTEX};
-        std::array<VkVertexInputAttributeDescription,4> attributes{{
+
+        VkVertexInputBindingDescription binding{0,sizeof(PbrVertex),VK_VERTEX_INPUT_RATE_VERTEX};   // 顶点vertex 的binding是0
+
+        std::array<VkVertexInputAttributeDescription,4> attributes{{        // 对应slang shader文件
             {0,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(PbrVertex,position)},
-            {1,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(PbrVertex,normal)},
+
+            {1,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(PbrVertex,normal)},    //  binding0，location1
+
             {2,0,VK_FORMAT_R32G32_SFLOAT,offsetof(PbrVertex,uv)},
             {3,0,VK_FORMAT_R32G32B32A32_SFLOAT,offsetof(PbrVertex,tangent)}}};
         VkPipelineVertexInputStateCreateInfo input{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-        input.vertexBindingDescriptionCount = 1; input.pVertexBindingDescriptions = &binding;
+        input.vertexBindingDescriptionCount = 1; 
+        input.pVertexBindingDescriptions = &binding;
         input.vertexAttributeDescriptionCount = uint32_t(attributes.size()); input.pVertexAttributeDescriptions = attributes.data();
         VkPipelineInputAssemblyStateCreateInfo assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO}; assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         VkPipelineViewportStateCreateInfo viewport{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO}; viewport.viewportCount = viewport.scissorCount = 1;
@@ -437,14 +447,24 @@ struct PbrRenderer::Impl {
         VkPipelineColorBlendStateCreateInfo blend{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO}; blend.attachmentCount = 1; blend.pAttachments = &attachment;
         std::array<VkDynamicState,2> dynamicStates{VK_DYNAMIC_STATE_VIEWPORT,VK_DYNAMIC_STATE_SCISSOR};
         VkPipelineDynamicStateCreateInfo dynamic{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO}; dynamic.dynamicStateCount = 2; dynamic.pDynamicStates = dynamicStates.data();
+        
         VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
-        info.stageCount = 2; info.pStages = stages.data(); info.pVertexInputState = &input; info.pInputAssemblyState = &assembly;
-        info.pViewportState = &viewport; info.pRasterizationState = &raster; info.pMultisampleState = &multisample;
-        info.pDepthStencilState = &depth; info.pColorBlendState = &blend; info.pDynamicState = &dynamic;
-        info.layout = pipelineLayout; info.renderPass = renderPass.getRenderpass();
-        for (uint32_t key=0;key<pipelines.size();++key) {
+        info.stageCount = 2; 
+        info.pStages = stages.data(); 
+        info.pVertexInputState = &input; 
+        info.pInputAssemblyState = &assembly;
+        info.pViewportState = &viewport; 
+        info.pRasterizationState = &raster; 
+        info.pMultisampleState = &multisample;
+        info.pDepthStencilState = &depth; 
+        info.pColorBlendState = &blend; 
+        info.pDynamicState = &dynamic;
+        info.layout = pipelineLayout; 
+        info.renderPass = renderPass.getRenderpass();
+        for (uint32_t key=0;key<pipelines.size();++key) {   // 对于不同的绘制情况，先批量设置基础attribute，之后再根据不同情况，分别设置对应的剩余attri
             bool transparent = key & 1, doubleSided = key & 2, mirrored = key & 4;
-            attachment.blendEnable = transparent; depth.depthWriteEnable = !transparent;
+            attachment.blendEnable = transparent; 
+            depth.depthWriteEnable = !transparent;
             raster.cullMode = doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
             raster.frontFace = mirrored ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
             check(vkCreateGraphicsPipelines(device.getDevice(),VK_NULL_HANDLE,1,&info,nullptr,&pipelines[key]),"create PBR graphics pipeline");
@@ -456,7 +476,12 @@ struct PbrRenderer::Impl {
         auto model = std::make_unique<GpuModel>(device.getDevice());
         model->minimum = cpu.minimum; model->maximum = cpu.maximum;
         model->materials = cpu.materials; model->primitives = cpu.primitives;
-        model->vertices = upload(cpu.vertices.data(),cpu.vertices.size()*sizeof(PbrVertex),VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+        model->vertices = upload(
+            cpu.vertices.data(),
+            cpu.vertices.size()*sizeof(PbrVertex),
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
         model->indices = upload(cpu.indices.data(),cpu.indices.size()*sizeof(uint32_t),VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         for (uint32_t frame=0;frame<frames;++frame) {
             auto ubo = createBuffer(sizeof(PbrUniforms),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -489,12 +514,18 @@ struct PbrRenderer::Impl {
                 VkDescriptorBufferInfo ubo{model->uniforms[frame]->buffer,0,sizeof(PbrUniforms)};
                 std::array<VkWriteDescriptorSet,6> writes{};
                 for (uint32_t binding=0;binding<writes.size();++binding) {
-                    auto& write = writes[binding]; write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    write.dstSet = model->sets[m*frames+frame]; write.dstBinding = binding; write.descriptorCount = 1;
+                    auto& write = writes[binding]; 
+                    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    write.dstSet = model->sets[m*frames+frame]; 
+                    write.dstBinding = binding; 
+                    write.descriptorCount = 1;
                     write.descriptorType = binding == 0 ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                     if (binding == 0) write.pBufferInfo = &ubo; else write.pImageInfo = &images[binding-1];
                 }
-                vkUpdateDescriptorSets(device.getDevice(),uint32_t(writes.size()),writes.data(),0,nullptr);
+
+                vkUpdateDescriptorSets(device.getDevice(),uint32_t(writes.size()),writes.data(),0,nullptr);     // descriptor, set 0 
+                // ubo的数据格式和布局需要与shader中相同
+
             }
         }
         std::cout << "PBR loaded " << path << ": " << cpu.vertices.size() << " vertices, " << cpu.indices.size()/3 << " triangles, " << model->primitives.size() << " primitives\n";
@@ -524,13 +555,18 @@ void PbrRenderer::setLight(uint32_t index,glm::vec3 position,glm::vec3 intensity
 void PbrRenderer::setExposure(float exposure) { require(std::isfinite(exposure) && exposure>0,"Invalid exposure"); impl->frameData.parameters.x = exposure; }
 void PbrRenderer::updateFrame(uint32_t frame,const Camera& camera,VkExtent2D extent,VkFormat format) {
     require(frame<impl->frames && extent.width && extent.height,"Invalid PBR frame or extent");
-    auto ubo = impl->frameData; ubo.view = camera.getViewMatrix(); impl->view = ubo.view;
+    auto ubo = impl->frameData; 
+    ubo.view = camera.getViewMatrix(); 
+    impl->view = ubo.view;
     ubo.proj = camera.getProjectionMatrix(float(extent.width)/float(extent.height)); ubo.proj[1][1] *= -1;
     ubo.camPos = glm::vec4(camera.getPosition(),1);
     ubo.parameters.z = format == VK_FORMAT_B8G8R8A8_SRGB || format == VK_FORMAT_R8G8B8A8_SRGB || format == VK_FORMAT_A8B8G8R8_SRGB_PACK32 ? 1.0f : 0.0f;
     for (auto& model : impl->models) {
-        ubo.model = model->transform; ubo.normalMatrix = glm::transpose(glm::inverse(ubo.model));
+        ubo.model = model->transform; 
+        ubo.normalMatrix = glm::transpose(glm::inverse(ubo.model));
+
         std::memcpy(model->uniforms[frame]->mapped,&ubo,sizeof(ubo));
+
     }
 }
 void PbrRenderer::draw(VkCommandBuffer command,uint32_t frame,VkExtent2D extent) {
@@ -540,14 +576,24 @@ void PbrRenderer::draw(VkCommandBuffer command,uint32_t frame,VkExtent2D extent)
     struct Draw { Impl::GpuModel* model; const Primitive* primitive; float depth; };
     std::vector<Draw> transparent;
     auto draw = [&](Impl::GpuModel& model,const Primitive& primitive) {
+
         const auto& material = model.materials[primitive.material].constants;
+
         uint32_t key = (material.flags.y == 2 ? 1 : 0) | (material.flags.z ? 2 : 0) | (glm::determinant(glm::mat3(model.transform))<0 ? 4 : 0);
-        vkCmdBindPipeline(command,VK_PIPELINE_BIND_POINT_GRAPHICS,impl->pipelines[key]);
-        VkDeviceSize offset = 0; vkCmdBindVertexBuffers(command,0,1,&model.vertices->buffer,&offset);
+
+        vkCmdBindPipeline(command,VK_PIPELINE_BIND_POINT_GRAPHICS,impl->pipelines[key]);       // 使用pipelines的设置，在draw阶段绘制
+
+        VkDeviceSize offset = 0; 
+
+        vkCmdBindVertexBuffers(command,0,1,&model.vertices->buffer,&offset);
+
         vkCmdBindIndexBuffer(command,model.indices->buffer,0,VK_INDEX_TYPE_UINT32);
         auto set = model.sets[primitive.material*impl->frames+frame];
+
         vkCmdBindDescriptorSets(command,VK_PIPELINE_BIND_POINT_GRAPHICS,impl->pipelineLayout,0,1,&set,0,nullptr);
+
         vkCmdPushConstants(command,impl->pipelineLayout,VK_SHADER_STAGE_FRAGMENT_BIT,0,sizeof(material),&material);
+
         vkCmdDrawIndexed(command,primitive.indexCount,1,primitive.firstIndex,0,0);
     };
     for (auto& model : impl->models) for (const auto& primitive : model->primitives) {
