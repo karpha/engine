@@ -399,8 +399,10 @@ struct PbrRenderer::Impl {
             sizeof(PbrMaterialConstants)};
 
         VkPipelineLayoutCreateInfo layoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-        layoutInfo.setLayoutCount = 1; layoutInfo.pSetLayouts = &descriptorLayout;
-        layoutInfo.pushConstantRangeCount = 1; layoutInfo.pPushConstantRanges = &push;
+        layoutInfo.setLayoutCount = 1; 
+        layoutInfo.pSetLayouts = &descriptorLayout;
+        layoutInfo.pushConstantRangeCount = 1; 
+        layoutInfo.pPushConstantRanges = &push;
         check(vkCreatePipelineLayout(device.getDevice(),&layoutInfo,nullptr,&pipelineLayout),"create PBR pipeline layout");
         struct Module {
             VkDevice device; VkShaderModule handle = VK_NULL_HANDLE;
