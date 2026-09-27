@@ -1,5 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include <span>
+#include <limits>
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
@@ -9,6 +11,14 @@ class Buffer;
 class Texture;
 class RenderPass;
 class Camera;
+
+// Resource identity and per-object render data shared with Engine.
+struct ModelHandle {
+    size_t value = std::numeric_limits<size_t>::max();
+    bool operator==(const ModelHandle&) const = default;
+};
+struct ModelBounds { glm::vec3 minimum{}, maximum{}; };
+struct RenderItem { ModelHandle model; glm::mat4 worldTransform{1}; };
 
 // Matches pbrCommon.slang, compiled with column-major matrices.
 struct PbrVertex {
@@ -39,10 +49,9 @@ public:
     PbrRenderer& operator=(const PbrRenderer&) = delete;
     void initialize();
     size_t loadModel(const std::string& path);
-    void setModelTransform(size_t model, const glm::mat4& transform);
-    void fitModel(size_t model, const glm::vec3& center, float size);
+    ModelBounds modelBounds(size_t model) const;
     // Update only after waiting for the current frame's fence.
-    void updateFrame(uint32_t frame, const Camera&, VkExtent2D, VkFormat);
+    void updateFrame(uint32_t frame, std::span<const RenderItem>, const Camera&, VkExtent2D, VkFormat);
     // Caller owns begin/end render pass and command buffer.
     void draw(VkCommandBuffer, uint32_t frame, VkExtent2D);
     void setLight(uint32_t index, glm::vec3 position, glm::vec3 intensity);

@@ -15,6 +15,7 @@ find_package(imgui CONFIG REQUIRED)
 # ===== 可执行文件 =====
 add_executable(Engine 
     src/main.cpp
+    src/engine.cpp
     src/instance.cpp
     src/window.cpp
     src/device.cpp

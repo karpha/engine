@@ -274,16 +274,24 @@ struct PbrRenderer::Impl {
     struct GpuModel {
         VkDevice device;
         std::unique_ptr<GpuBuffer> vertices, indices;
-        std::vector<std::unique_ptr<GpuBuffer>> uniforms;
         std::vector<std::unique_ptr<GpuTexture>> textures;
         std::vector<Material> materials;
         std::vector<Primitive> primitives;
-        std::vector<VkDescriptorSet> sets;
-        VkDescriptorPool pool = VK_NULL_HANDLE;
-        glm::mat4 transform{1};
+        std::vector<std::array<VkDescriptorImageInfo,5>> materialImages;
         glm::vec3 minimum{}, maximum{};
         explicit GpuModel(VkDevice d) : device(d) {}
-        ~GpuModel() { vkDestroyDescriptorPool(device,pool,nullptr); }
+    };
+    // Each in-flight frame owns its own instance buffers/descriptors. Replacing or
+    // deleting an entity only retires resources after that frame's fence signals.
+    struct GpuInstance {
+        VkDevice device;
+        GpuModel* model = nullptr;
+        glm::mat4 transform{1};
+        std::unique_ptr<GpuBuffer> uniform;
+        std::vector<VkDescriptorSet> sets;
+        VkDescriptorPool pool = VK_NULL_HANDLE;
+        explicit GpuInstance(VkDevice d) : device(d) {}
+        ~GpuInstance() { vkDestroyDescriptorPool(device,pool,nullptr); }
     };
     Device& device;
     Buffer& buffer;
@@ -295,21 +303,25 @@ struct PbrRenderer::Impl {
     // alpha blending x double sided x mirrored model transform
     std::array<VkPipeline,8> pipelines{};
     std::vector<std::unique_ptr<GpuModel>> models;
+    std::vector<std::vector<std::unique_ptr<GpuInstance>>> instances;
     PbrUniforms frameData;
     glm::mat4 view{1};
 
     Impl(Device& d,Buffer& b,Texture& t,RenderPass& r,uint32_t f) : device(d),buffer(b),texture(t),renderPass(r),frames(f) {
         require(frames > 0, "PBR framesInFlight must be positive");
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), &properties);
-        require(properties.apiVersion >= VK_API_VERSION_1_1, "PBR requires Vulkan 1.1 (SPIR-V 1.3)");
+        instances.resize(frames);
         frameData.lightPositions[0] = {0,5,5,1}; frameData.lightColors[0] = {90,90,90,1};
         frameData.lightPositions[1] = {-5,1,0,1}; frameData.lightColors[1] = {12,18,40,1};
         frameData.lightPositions[2] = {5,1,0,1}; frameData.lightColors[2] = {40,12,12,1};
         frameData.lightPositions[3] = {0,3,-5,1}; frameData.lightColors[3] = {15,25,15,1};
+
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), &properties);
+        require(properties.apiVersion >= VK_API_VERSION_1_1, "PBR requires Vulkan 1.1 (SPIR-V 1.3)");
     }
     ~Impl() {
         vkDeviceWaitIdle(device.getDevice());
+        instances.clear();
         models.clear();
         for (auto pipeline : pipelines) vkDestroyPipeline(device.getDevice(),pipeline,nullptr);
         vkDestroyPipelineLayout(device.getDevice(),pipelineLayout,nullptr);
@@ -472,6 +484,40 @@ struct PbrRenderer::Impl {
             check(vkCreateGraphicsPipelines(device.getDevice(),VK_NULL_HANDLE,1,&info,nullptr,&pipelines[key]),"create PBR graphics pipeline");
         }
     }
+    std::unique_ptr<GpuInstance> createInstance(GpuModel& model) {
+        auto instance = std::make_unique<GpuInstance>(device.getDevice());
+        instance->model = &model;
+        instance->uniform = createBuffer(sizeof(PbrUniforms),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        check(vkMapMemory(device.getDevice(),instance->uniform->memory,0,sizeof(PbrUniforms),0,
+                         &instance->uniform->mapped),"map instance uniforms");
+        require(model.materials.size()<=UINT32_MAX/5,"Too many PBR materials");
+        uint32_t count = uint32_t(model.materials.size());
+        std::array<VkDescriptorPoolSize,2> sizes{{{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,count},
+                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,count*5}}};
+        VkDescriptorPoolCreateInfo pool{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+        pool.maxSets=count; pool.poolSizeCount=uint32_t(sizes.size()); pool.pPoolSizes=sizes.data();
+        check(vkCreateDescriptorPool(device.getDevice(),&pool,nullptr,&instance->pool),"create instance descriptor pool");
+        std::vector<VkDescriptorSetLayout> layouts(count,descriptorLayout);
+        instance->sets.resize(count);
+        VkDescriptorSetAllocateInfo allocate{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+        allocate.descriptorPool=instance->pool; allocate.descriptorSetCount=count; allocate.pSetLayouts=layouts.data();
+        check(vkAllocateDescriptorSets(device.getDevice(),&allocate,instance->sets.data()),"allocate instance descriptors");
+        for (size_t m=0;m<model.materials.size();++m) {
+            VkDescriptorBufferInfo uniform{instance->uniform->buffer,0,sizeof(PbrUniforms)};
+            std::array<VkWriteDescriptorSet,6> writes{};
+            for (uint32_t binding=0;binding<writes.size();++binding) {
+                auto& write=writes[binding];
+                write.sType=VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write.dstSet=instance->sets[m]; write.dstBinding=binding; write.descriptorCount=1;
+                write.descriptorType=binding==0 ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                if (binding==0) write.pBufferInfo=&uniform;
+                else write.pImageInfo=&model.materialImages[m][binding-1];
+            }
+            vkUpdateDescriptorSets(device.getDevice(),uint32_t(writes.size()),writes.data(),0,nullptr);
+        }
+        return instance;
+    }
     size_t load(const std::string& path) {
         require(pipelineLayout != VK_NULL_HANDLE,"Initialize PBR before loading models");
         auto cpu = readModel(path);
@@ -485,19 +531,6 @@ struct PbrRenderer::Impl {
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
         model->indices = upload(cpu.indices.data(),cpu.indices.size()*sizeof(uint32_t),VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-        for (uint32_t frame=0;frame<frames;++frame) {
-            auto ubo = createBuffer(sizeof(PbrUniforms),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            check(vkMapMemory(device.getDevice(),ubo->memory,0,sizeof(PbrUniforms),0,&ubo->mapped),"map PBR uniforms");
-            model->uniforms.push_back(std::move(ubo));
-        }
-        require(model->materials.size() <= UINT32_MAX / frames / 5,"Too many PBR materials");
-        uint32_t count = uint32_t(model->materials.size())*frames;
-        std::array<VkDescriptorPoolSize,2> sizes{{{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,count},{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,count*5}}};
-        VkDescriptorPoolCreateInfo pool{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO}; pool.maxSets = count; pool.poolSizeCount = 2; pool.pPoolSizes = sizes.data();
-        check(vkCreateDescriptorPool(device.getDevice(),&pool,nullptr,&model->pool),"create PBR descriptor pool");
-        std::vector<VkDescriptorSetLayout> layouts(count,descriptorLayout); model->sets.resize(count);
-        VkDescriptorSetAllocateInfo allocate{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO}; allocate.descriptorPool = model->pool; allocate.descriptorSetCount = count; allocate.pSetLayouts = layouts.data();
-        check(vkAllocateDescriptorSets(device.getDevice(),&allocate,model->sets.data()),"allocate PBR descriptor sets");
         std::map<std::pair<int,int>,size_t> cache;
         for (size_t m=0;m<model->materials.size();++m) {
             std::array<VkDescriptorImageInfo,5> images{};
@@ -512,23 +545,7 @@ struct PbrRenderer::Impl {
                 }
                 const auto& image = *model->textures[it->second]; images[slot] = {image.sampler,image.view,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
             }
-            for (uint32_t frame=0;frame<frames;++frame) {
-                VkDescriptorBufferInfo ubo{model->uniforms[frame]->buffer,0,sizeof(PbrUniforms)};
-                std::array<VkWriteDescriptorSet,6> writes{};
-                for (uint32_t binding=0;binding<writes.size();++binding) {
-                    auto& write = writes[binding]; 
-                    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    write.dstSet = model->sets[m*frames+frame]; 
-                    write.dstBinding = binding; 
-                    write.descriptorCount = 1;
-                    write.descriptorType = binding == 0 ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    if (binding == 0) write.pBufferInfo = &ubo; else write.pImageInfo = &images[binding-1];
-                }
-
-                vkUpdateDescriptorSets(device.getDevice(),uint32_t(writes.size()),writes.data(),0,nullptr);     // descriptor, set 0 
-                // ubo的数据格式和布局需要与shader中相同
-
-            }
+            model->materialImages.push_back(images);
         }
         std::cout << "PBR loaded " << path << ": " << cpu.vertices.size() << " vertices, " << cpu.indices.size()/3 << " triangles, " << model->primitives.size() << " primitives\n";
         models.push_back(std::move(model)); return models.size()-1;
@@ -539,23 +556,16 @@ PbrRenderer::PbrRenderer(Device& d,Buffer& b,Texture& t,RenderPass& r,uint32_t f
 PbrRenderer::~PbrRenderer() = default;
 void PbrRenderer::initialize() { impl->createPipelines(); }
 size_t PbrRenderer::loadModel(const std::string& path) { return impl->load(path); }
-void PbrRenderer::setModelTransform(size_t model,const glm::mat4& transform) {
-    float determinant = glm::determinant(glm::mat3(transform));
-    require(std::isfinite(determinant) && std::abs(determinant)>1e-12f,"Singular PBR model transform");
-    impl->models.at(model)->transform = transform;
-}
-void PbrRenderer::fitModel(size_t index,const glm::vec3& center,float size) {
-    const auto& model = *impl->models.at(index); auto extent = model.maximum-model.minimum;
-    float dimension = std::max({extent.x,extent.y,extent.z});
-    require(size>0 && dimension>1e-8f,"Invalid model bounds or size");
-    setModelTransform(index,glm::translate(glm::mat4(1),center)*glm::scale(glm::mat4(1),glm::vec3(size/dimension))*glm::translate(glm::mat4(1),-(model.minimum+model.maximum)*0.5f));
+ModelBounds PbrRenderer::modelBounds(size_t index) const {
+    const auto& model=*impl->models.at(index);
+    return {model.minimum,model.maximum};
 }
 void PbrRenderer::setLight(uint32_t index,glm::vec3 position,glm::vec3 intensity) {
     require(index<4,"PBR supports four point lights"); impl->frameData.lightPositions[index] = glm::vec4(position,1);
     impl->frameData.lightColors[index] = glm::vec4(glm::max(intensity,glm::vec3(0)),1);
 }
 void PbrRenderer::setExposure(float exposure) { require(std::isfinite(exposure) && exposure>0,"Invalid exposure"); impl->frameData.parameters.x = exposure; }
-void PbrRenderer::updateFrame(uint32_t frame,const Camera& camera,VkExtent2D extent,VkFormat format) {
+void PbrRenderer::updateFrame(uint32_t frame,std::span<const RenderItem> items,const Camera& camera,VkExtent2D extent,VkFormat format) {
     require(frame<impl->frames && extent.width && extent.height,"Invalid PBR frame or extent");
     auto ubo = impl->frameData; 
     ubo.view = camera.getViewMatrix(); 
@@ -563,25 +573,33 @@ void PbrRenderer::updateFrame(uint32_t frame,const Camera& camera,VkExtent2D ext
     ubo.proj = camera.getProjectionMatrix(float(extent.width)/float(extent.height)); ubo.proj[1][1] *= -1;
     ubo.camPos = glm::vec4(camera.getPosition(),1);
     ubo.parameters.z = format == VK_FORMAT_B8G8R8A8_SRGB || format == VK_FORMAT_R8G8B8A8_SRGB || format == VK_FORMAT_A8B8G8R8_SRGB_PACK32 ? 1.0f : 0.0f;
-    for (auto& model : impl->models) {
-        ubo.model = model->transform; 
-        ubo.normalMatrix = glm::transpose(glm::inverse(ubo.model));
-
-        std::memcpy(model->uniforms[frame]->mapped,&ubo,sizeof(ubo));
-
+    auto& instances=impl->instances.at(frame);
+    instances.resize(items.size());
+    for (size_t i=0;i<items.size();++i) {
+        const auto& item=items[i];
+        auto& model=*impl->models.at(item.model.value);
+        if (!instances[i] || instances[i]->model!=&model) instances[i]=impl->createInstance(model);
+        auto& instance=*instances[i];
+        instance.transform=item.worldTransform;
+        float determinant=glm::determinant(glm::mat3(instance.transform));
+        require(std::isfinite(determinant)&&std::abs(determinant)>1e-12f,"Singular instance transform");
+        ubo.model=instance.transform;
+        ubo.normalMatrix=glm::transpose(glm::inverse(ubo.model));
+        std::memcpy(instance.uniform->mapped,&ubo,sizeof(ubo));
     }
 }
 void PbrRenderer::draw(VkCommandBuffer command,uint32_t frame,VkExtent2D extent) {
     require(frame<impl->frames,"Invalid PBR frame");
     VkViewport viewport{0,0,float(extent.width),float(extent.height),0,1}; VkRect2D scissor{{0,0},extent};
     vkCmdSetViewport(command,0,1,&viewport); vkCmdSetScissor(command,0,1,&scissor);
-    struct Draw { Impl::GpuModel* model; const Primitive* primitive; float depth; };
+    struct Draw { Impl::GpuInstance* instance; const Primitive* primitive; float depth; };
     std::vector<Draw> transparent;
-    auto draw = [&](Impl::GpuModel& model,const Primitive& primitive) {
+    auto draw = [&](Impl::GpuInstance& instance,const Primitive& primitive) {
+        const auto& model=*instance.model;
 
         const auto& material = model.materials[primitive.material].constants;
 
-        uint32_t key = (material.flags.y == 2 ? 1 : 0) | (material.flags.z ? 2 : 0) | (glm::determinant(glm::mat3(model.transform))<0 ? 4 : 0);
+        uint32_t key = (material.flags.y == 2 ? 1 : 0) | (material.flags.z ? 2 : 0) | (glm::determinant(glm::mat3(instance.transform))<0 ? 4 : 0);
 
         vkCmdBindPipeline(command,VK_PIPELINE_BIND_POINT_GRAPHICS,impl->pipelines[key]);       // 使用pipelines的设置，在draw阶段绘制
 
@@ -590,7 +608,7 @@ void PbrRenderer::draw(VkCommandBuffer command,uint32_t frame,VkExtent2D extent)
         vkCmdBindVertexBuffers(command,0,1,&model.vertices->buffer,&offset);
 
         vkCmdBindIndexBuffer(command,model.indices->buffer,0,VK_INDEX_TYPE_UINT32);
-        auto set = model.sets[primitive.material*impl->frames+frame];
+        auto set = instance.sets[primitive.material];
 
         vkCmdBindDescriptorSets(command,VK_PIPELINE_BIND_POINT_GRAPHICS,impl->pipelineLayout,0,1,&set,0,nullptr);
 
@@ -598,14 +616,14 @@ void PbrRenderer::draw(VkCommandBuffer command,uint32_t frame,VkExtent2D extent)
 
         vkCmdDrawIndexed(command,primitive.indexCount,1,primitive.firstIndex,0,0);
     };
-    for (auto& model : impl->models) for (const auto& primitive : model->primitives) {
-        if (model->materials[primitive.material].constants.flags.y == 2) {
-            float depth = (impl->view*model->transform*glm::vec4(primitive.center,1)).z;
-            transparent.push_back({model.get(),&primitive,depth});
-        } else draw(*model,primitive);
+    for (auto& instance : impl->instances.at(frame)) for (const auto& primitive : instance->model->primitives) {
+        if (instance->model->materials[primitive.material].constants.flags.y == 2) {
+            float depth = (impl->view*instance->transform*glm::vec4(primitive.center,1)).z;
+            transparent.push_back({instance.get(),&primitive,depth});
+        } else draw(*instance,primitive);
     }
     std::stable_sort(transparent.begin(),transparent.end(),[](const Draw& a,const Draw& b) { return a.depth<b.depth; });
-    for (const auto& item : transparent) draw(*item.model,*item.primitive);
+    for (const auto& item : transparent) draw(*item.instance,*item.primitive);
 }
 void PbrRenderer::validateAssets(const std::string& directory) {
     // Regression: normalized interleaved data with independent view/accessor offsets.

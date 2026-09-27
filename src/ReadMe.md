@@ -39,11 +39,11 @@ cmake --build build_engine --config Debug
 
 PBR C++ implementation and GPU layouts live in `pbr.h` / `pbr.cpp`.
 The existing Slang shaders implement GGX / Smith / Schlick direct lighting.
-`main.cpp` only selects the rendering path, loads the demo and calls update/draw.
+`main.cpp` creates Engine and configures the demo; engine.cpp owns the frame loop and Vulkan submission.
 `Buffer` and `Texture` supply the existing allocation/upload helpers.
 
 Requirements: Vulkan 1.1 device, Vulkan SDK with slangc, and the vcpkg manifest
-(including the pinned tinygltf 2.9.7 dependency). No manual SPIR-V compilation
+(including the pinned tinygltf dependency). No manual SPIR-V compilation
 is needed: the PbrShaders CMake target builds both stages with column-major matrices.
 
 From the repository root, after configuring the existing build directory:
@@ -59,9 +59,9 @@ ctest --test-dir build -C Debug --output-on-failure
 ```
 
 Default scene: DamagedHelmet and FlightHelmet, fitted side by side. Camera controls
-are unchanged. Public PbrRenderer methods set model transforms, point lights and
-exposure. Call updateFrame only after waiting on that frame's fence; draw must be
-inside the compatible existing render pass. Load models during initialization.
+are unchanged. Engine owns scene objects and exposes loadModel, createObject,
+setTransform, removeObject, clearObjects, setLight and setExposure. PbrRenderer
+receives the object list after waiting on the frame fence.
 
 Supported: static triangle glTF/glb scenes, node transforms, uint8/16/32 indices,
 accessor offsets/strides and normalized attributes, generated missing normals and
@@ -77,3 +77,32 @@ transmission yet. Ambient light is a constant approximation, not IBL; there are 
 shadow maps. Existing swapchain recreation assumes the attachment format stays
 compatible with the render pass. Tests exercise the actual CPU glTF loader, bounds,
 accessor normalization/stride handling, and generated normal/tangent bases.
+
+### Minimal rendering engine
+
+Only `engine.h` and `engine.cpp` are new. Existing Vulkan wrappers, camera, UI,
+shaders and legacy rendering path remain in use. Engine contains the frame loop,
+Vulkan resource lifetime, a canonical-path model cache and a small object list.
+There are no separate Scene, AssetManager, Input or Application modules.
+
+Model resources are shared; objects have independent transforms and stable IDs.
+Removing objects does not unload cached models. Resources live until engine
+shutdown. Runtime loading is synchronous and waits for GPU idle. Per-frame
+instance uniforms/descriptors are replaced only after that frame's fence signals.
+Object matrices must be finite, affine and nonsingular. This is a rendering
+engine, without JSON persistence, hierarchy, physics, audio or an editor.
+The existing four-point-light and static-mesh limits still apply.
+
+```cpp
+Engine engine;
+auto model = engine.loadModel("models/DamagedHelmet/DamagedHelmet.gltf");
+auto object = engine.createObject(model, engine.fitTransform(model, {0,1,0}, 1.5f));
+// Another createObject(model, ...) shares mesh/texture GPU allocations.
+engine.run([&](Engine& engine, float dt) {
+    // Application update: engine.setTransform(object, matrix), removeObject, etc.
+});
+```
+
+Build/run commands above are unchanged. `--scene` and `--save-scene` from the
+larger experimental refactor are no longer supported. Ordinary window resize is
+supported; changing swapchain attachment format requires restarting the process.
