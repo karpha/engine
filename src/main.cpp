@@ -21,6 +21,9 @@ int main(int argc, char** argv) {
             auto flight=engine.loadModel("models/FlightHelmet/FlightHelmet.gltf");
             engine.createObject(damaged,engine.fitTransform(damaged,{-0.85f,1,0},1.5f));
             engine.createObject(flight,engine.fitTransform(flight,{0.85f,1,0},1.5f));
+
+            auto bismarckturm = engine.loadModel("models/bismarckturm/scene.gltf");
+            engine.createObject(bismarckturm,engine.fitTransform(bismarckturm,{0.0f, 1.0f, 0.0f}, 1.5f ));
         }
         engine.run();
         return EXIT_SUCCESS;
