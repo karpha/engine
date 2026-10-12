@@ -7,6 +7,13 @@ vcpkg install
 
 > 根目录下两个pdf文档为vulkan基础功能的教程文档，英文版为官方文档，中文版为非官方版
 - 这个项目在实现过程中的参考链接：
+- renderer部分
+```bash
+https://docs.vulkan.org/tutorial/latest/03_Drawing_a_triangle/00_Setup/00_Base_code.html
+
+```
+
+- engine部分
 ```bash
 https://docs.vulkan.org/tutorial/latest/Building_a_Simple_Engine/introduction.html
 
